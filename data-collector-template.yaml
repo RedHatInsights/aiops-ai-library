@@ -1,0 +1,142 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: aiops-data-collector
+parameters:
+- name: AI_MICROSERVICE_URL
+  required: true
+objects:
+
+- kind: Service
+  apiVersion: v1
+  metadata:
+    labels:
+      app: aiops-pipeline
+    name: aiops-data-collector
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      deploymentconfig: aiops-data-collector
+    sessionAffinity: None
+    type: ClusterIP
+
+- kind: DeploymentConfig
+  apiVersion: v1
+  metadata:
+    labels:
+      app: aiops-pipeline
+    name: aiops-data-collector
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: aiops-data-collector
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          app: aiops-pipeline
+          deploymentconfig: aiops-data-collector
+      spec:
+        containers:
+        - env:
+          - name: NEXT_MICROSERVICE_URL
+            value: "${AI_MICROSERVICE_URL}"
+          - name: AWS_S3_BUCKET_NAME
+            value: insights-system-data
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: aiops-secrets
+                key: aws_key
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: aiops-secrets
+                key: aws_secret
+          image: aiops-data-collector
+          imagePullPolicy: Always
+          name: aiops-data-collector
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - aiops-data-collector
+        from:
+          kind: ImageStreamTag
+          name: aiops-data-collector:latest
+      type: ImageChange
+    - type: ConfigChange
+
+- kind: BuildConfig
+  apiVersion: v1
+  metadata:
+    labels:
+      app: aiops-pipeline
+    name: aiops-data-collector
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: aiops-data-collector:latest
+    source:
+      type: Git
+      git:
+        ref: master
+        uri: https://github.com/tumido/aiops-data-collector
+    strategy:
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: python:3.6
+          namespace: openshift
+      type: Source
+      incremental: true
+    triggers:
+    - type: Generic
+      generic:
+        secret: 6a075f9cec1c4934
+    - type: GitHub
+      github:
+        secret: b02f15f3a1bbbc7e
+    - imageChange: {}
+      type: ImageChange
+    - type: ConfigChange
+
+- kind: ImageStream
+  apiVersion: v1
+  metadata:
+    labels:
+      app: aiops-pipeline
+    name: aiops-data-collector
+  spec:
+    lookupPolicy:
+      local: false
+    tags:
+    - from:
+        kind: DockerImage
+        name: aiops-data-collector:latest
+      name: latest
+
+- kind: Route
+  apiVersion: v1
+  metadata:
+    name: aiops-data-collector
+  spec:
+    to:
+      kind: Service
+      name: aiops-data-collector
