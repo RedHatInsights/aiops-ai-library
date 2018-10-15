@@ -45,8 +45,8 @@ objects:
             value: platform-mq-cluster-kafka.platform-mq.svc:9092
           - name: KAFKA_TOPIC
             value: available
-          - name: NEXT_MICROSERVICE_URL
-            value: http://aiops-data-collector.tcoufal-aiops-playground.svc:8080
+          - name: NEXT_MICROSERVICE_HOST
+            value: aiops-data-collector:8080
           image: aiops-incoming-listener
           imagePullPolicy: Always
           name: aiops-incoming-listener

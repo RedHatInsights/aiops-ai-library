@@ -15,7 +15,7 @@ def index():
     logger.info('Received data. Black magic routine initiated...')
 
     data['status'] = 'Processed by AI'
-    requests.post(os.environ.get('NEXT_MICROSERVICE_URL'), json=data)
+    requests.post(os.environ.get('NEXT_MICROSERVICE_HOST'), json=data)
 
     logger.info('Done: %s', str(data))
 
@@ -23,4 +23,4 @@ def index():
 
 
 if __name__ == "__main__":
-    APP.run(port=8080)
+    APP.run(port=8080, debug=True)

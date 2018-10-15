@@ -3,7 +3,7 @@ apiVersion: v1
 metadata:
   name: aiops-data-collector
 parameters:
-- name: AI_MICROSERVICE_URL
+- name: AI_MICROSERVICE_HOST
   required: true
 objects:
 
@@ -44,8 +44,8 @@ objects:
       spec:
         containers:
         - env:
-          - name: NEXT_MICROSERVICE_URL
-            value: "${AI_MICROSERVICE_URL}"
+          - name: NEXT_MICROSERVICE_HOST
+            value: "${AI_MICROSERVICE_HOST}"
           - name: AWS_S3_BUCKET_NAME
             value: insights-system-data
           - name: AWS_ACCESS_KEY_ID
