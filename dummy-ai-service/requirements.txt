@@ -1,3 +1,4 @@
 -i https://pypi.org/simple
 flask==1.0.2
 requests==2.19.1
+gunicorn==19.9.0
