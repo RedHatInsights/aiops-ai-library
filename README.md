@@ -13,5 +13,5 @@ OpenShift deployment scheme for the AI-Ops pipeline
 ```
 ❯ oc new-app --template aiops-globals --param AWS_KEY=... --param AWS_SECRET=...
 ❯ oc new-app --template aiops-incoming-listener
-❯ oc new-app --template aiops-data-collector --param AI_MICROSERVICE_URL=http://...
+❯ oc new-app --template aiops-data-collector --param AI_MICROSERVICE_HOST=dummy-ai-service:8080
 ```

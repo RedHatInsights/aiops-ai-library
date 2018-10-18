@@ -25,7 +25,7 @@ objects:
     type: ClusterIP
 
 - kind: DeploymentConfig
-  apiVersion: v1
+  apiVersion: apps.openshift.io/v1
   metadata:
     labels:
       app: aiops-pipeline
@@ -83,7 +83,7 @@ objects:
     - type: ConfigChange
 
 - kind: BuildConfig
-  apiVersion: v1
+  apiVersion: build.openshift.io/v1
   metadata:
     labels:
       app: aiops-pipeline
@@ -118,7 +118,7 @@ objects:
     - type: ConfigChange
 
 - kind: ImageStream
-  apiVersion: v1
+  apiVersion: image.openshift.io/v1
   metadata:
     labels:
       app: aiops-pipeline
@@ -133,7 +133,7 @@ objects:
       name: latest
 
 - kind: Route
-  apiVersion: v1
+  apiVersion: route.openshift.io/v1
   metadata:
     name: aiops-data-collector
   spec:
