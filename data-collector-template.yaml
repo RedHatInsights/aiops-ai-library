@@ -97,7 +97,7 @@ objects:
       type: Git
       git:
         ref: master
-        uri: https://github.com/tumido/aiops-data-collector
+        uri: https://github.com/ManageIQ/aiops-data-collector
     strategy:
       sourceStrategy:
         from:
