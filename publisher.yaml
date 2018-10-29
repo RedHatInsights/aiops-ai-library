@@ -1,0 +1,133 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: aiops-publisher
+parameters:
+  - description: Kafka server and port
+    name: KAFKA_SERVER
+    required: true
+objects:
+
+- kind: Service
+  apiVersion: v1
+  metadata:
+    labels:
+      app: aiops-pipeline
+    name: aiops-publisher
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      deploymentconfig: aiops-publisher
+    sessionAffinity: None
+    type: ClusterIP
+
+- kind: DeploymentConfig
+  apiVersion: apps.openshift.io/v1
+  metadata:
+    labels:
+      app: aiops-pipeline
+    name: aiops-publisher
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: aiops-publisher
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          app: aiops-pipeline
+          deploymentconfig: aiops-publisher
+      spec:
+        containers:
+        - env:
+          - name: KAFKA_SERVER
+            value: "${KAFKA_SERVER}"
+          - name: KAFKA_TOPIC
+            value: available
+          - name: AWS_S3_BUCKET_NAME
+            value: insights-system-data
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: aiops-secrets
+                key: aws_key
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: aiops-secrets
+                key: aws_secret
+          image: aiops-publisher
+          imagePullPolicy: Always
+          name: aiops-publisher
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - aiops-publisher
+        from:
+          kind: ImageStreamTag
+          name: aiops-publisher:latest
+      type: ImageChange
+    - type: ConfigChange
+
+- kind: BuildConfig
+  apiVersion: build.openshift.io/v1
+  metadata:
+    labels:
+      app: aiops-pipeline
+    name: aiops-publisher
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: aiops-publisher:latest
+    source:
+      type: Git
+      git:
+        ref: master
+        uri: https://github.com/ManageIQ/aiops-publisher
+    strategy:
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: python:3.6
+          namespace: openshift
+      type: Source
+      incremental: true
+    triggers:
+    - type: Generic
+      generic:
+        secret: 930e7b26856318d1
+    - type: GitHub
+      github:
+        secret: 40c25235e3f613e5
+    - imageChange: {}
+      type: ImageChange
+    - type: ConfigChange
+
+- kind: ImageStream
+  apiVersion: image.openshift.io/v1
+  metadata:
+    labels:
+      app: aiops-pipeline
+    name: aiops-publisher
+  spec:
+    lookupPolicy:
+      local: false
+    tags:
+    - from:
+        kind: DockerImage
+        name: aiops-publisher:latest
+      name: latest
