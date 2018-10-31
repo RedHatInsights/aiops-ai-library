@@ -99,13 +99,8 @@ objects:
         ref: master
         uri: https://github.com/tumido/aiops-data-collector
     strategy:
-      sourceStrategy:
-        from:
-          kind: ImageStreamTag
-          name: python:3.6
-          namespace: openshift
-      type: Source
-      incremental: true
+      dockerStrategy: {}
+      type: Docker
     triggers:
     - type: Generic
       generic:
