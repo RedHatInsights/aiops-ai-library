@@ -2,6 +2,11 @@ kind: Template
 apiVersion: v1
 metadata:
   name: aiops-incoming-listener
+parameters:
+  - name: KAFKA_SERVER
+    value: platform-mq-cluster-kafka.platform-mq.svc:9092
+    description: Kafka server and port
+
 objects:
 
 - kind: Service
@@ -42,7 +47,7 @@ objects:
         containers:
         - env:
           - name: KAFKA_SERVER
-            value: platform-mq-cluster-kafka.platform-mq.svc:9092
+            value: "${KAFKA_SERVER}"
           - name: KAFKA_TOPIC
             value: available
           - name: NEXT_MICROSERVICE_HOST

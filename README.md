@@ -35,3 +35,5 @@ from one endpoint to another service.
 ❯ oc new-app --template aiops-data-collector --param AI_MICROSERVICE_HOST=dummy-ai-service:8080
 ❯ oc new-app --template aiops-publisher
 ```
+
+Optionally, the `KAFKA_SERVER` parameter can be specified for `aiops-incoming-listener` and `aiops-publisher` within the `oc new-app` command.
