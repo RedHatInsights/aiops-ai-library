@@ -16,12 +16,20 @@ def index():
 
     application.logger.info('Received data. Black magic routine initiated...')
 
-    data['status'] = 'Processed by AI'
+    # Identify itself
+    data['ai_service'] = 'ai_dummy'
+
+    # Set data to empty list for easier upload
+    data['data'] = []
+
     requests.post(os.environ.get('NEXT_MICROSERVICE_HOST'), json=data)
 
     application.logger.info('Done: %s', str(data))
 
-    return jsonify(status="OK")
+    return jsonify(
+        status='OK',
+        message='Data processed by awesome, yet totally useless AI service'
+    )
 
 
 if __name__ == "__main__":
