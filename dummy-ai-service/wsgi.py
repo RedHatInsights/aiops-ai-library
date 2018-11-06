@@ -1,4 +1,5 @@
 import logging
+import os
 
 from flask import Flask, jsonify, request
 import requests
@@ -22,7 +23,8 @@ def index():
     # Set data to empty list for easier upload
     data['data'] = []
 
-    requests.post(os.environ.get('NEXT_MICROSERVICE_HOST'), json=data)
+    host = os.environ.get('NEXT_MICROSERVICE_HOST')
+    requests.post(f'http://{host}', json=data)
 
     application.logger.info('Done: %s', str(data))
 
