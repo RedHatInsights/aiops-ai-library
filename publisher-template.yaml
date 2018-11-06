@@ -3,9 +3,10 @@ apiVersion: v1
 metadata:
   name: aiops-publisher
 parameters:
-  - description: Kafka server and port
-    name: KAFKA_SERVER
-    required: true
+  - name: KAFKA_SERVER
+    value: platform-mq-cluster-kafka.platform-mq.svc:9092
+    description: Kafka server and port
+
 objects:
 
 - kind: Service
