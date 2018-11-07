@@ -1,0 +1,13 @@
+language: python
+python:
+  - '3.6'
+addons:
+  apt:
+    packages:
+      - libsnappy-dev
+install:
+  - pip install pipenv
+  - pipenv sync
+  - pipenv sync --dev
+script:
+  - pylama
