@@ -4,9 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-requests = "==2.19.1"
-gunicorn = "==19.9.0"
-Flask = "==1.0.2"
+requests = ">=2.20.0"
+gunicorn = "*"
+Flask = "*"
 
 [dev-packages]
 pylama = "*"
