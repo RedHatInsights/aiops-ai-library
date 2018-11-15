@@ -12,7 +12,7 @@ application.logger.setLevel(gunicorn_logger.level)
 
 @application.route("/", methods=['POST', 'PUT'])
 def index():
-    """Dummy AI service just passing data to next endpoint."""
+    """Pass data to next endpoint."""
     data = request.get_json(force=True)
 
     application.logger.info('Received data. Black magic routine initiated...')
