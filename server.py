@@ -6,6 +6,7 @@ from flask.logging import default_handler
 from werkzeug.exceptions import BadRequest
 
 
+from workers import volume_type_validation_worker
 
 
 def create_application():
@@ -47,6 +48,12 @@ def index():
 
     # Note: For insights data use `raw_data`
     # AI_Task_worker(job_id, raw_data, next_service, b64_identity)
+
+    volume_type_validation_worker(
+        input_data,
+        next_service,
+        b64_identity
+    )
 
     APP.logger.info('Job started')
 

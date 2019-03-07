@@ -44,3 +44,46 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
 #         b64_identity: str = None
 # )
 
+def volume_type_validation_worker(
+        job: dict,
+        next_service: str,
+        b64_identity: str = None
+) -> Thread:
+    """Validate Volume Types."""
+
+    def worker() -> None:
+        thread = current_thread()
+        logger.debug('%s: Worker started', thread.name)
+
+        try:
+            batch_id, batch_data = job['id'], job['data']
+        except KeyError:
+            logger.error("%s: Invalid Job data, terminated.", thread.name)
+            return
+
+        logger.info('%s: Job ID %s: Started...', thread.name, batch_id)
+
+        # AI Processing of input data in `job` goes here
+        # Store the AI Results in `output`
+        output = {}
+
+        # Pass to the next service
+        try:
+            _retryable(
+                'post',
+                f'http://{next_service}',
+                json=output,
+                headers={"x-rh-identity": b64_identity}
+            )
+        except requests.HTTPError as exception:
+            logger.error(
+                '%s: Failed to pass data for "%s": %s',
+                thread.name, batch_id, exception
+            )
+
+        logger.debug('%s: Done, exiting', thread.name)
+
+    thread = Thread(target=worker)
+    thread.start()
+
+    return thread
