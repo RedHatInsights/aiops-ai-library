@@ -2,6 +2,9 @@ import logging
 from threading import Thread, current_thread
 
 import requests
+import pandas as pd
+
+from volume_type_validation import AwsVolumeTypeValidation
 
 logger = logging.getLogger()
 MAX_RETRIES = 3
@@ -65,7 +68,42 @@ def volume_type_validation_worker(
 
         # AI Processing of input data in `job` goes here
         # Store the AI Results in `output`
-        output = {}
+
+        entities = [
+            "container_nodes",
+            "container_nodes_tags",
+            "volume_attachments",
+            "volumes",
+            "volume_types",
+            "vms",
+            "sources"
+        ]
+
+        all_dataframes = {}
+
+        for entity in entities:
+            json_data = batch_data.get(entity)
+            all_dataframes[entity] = pd.DataFrame(json_data)
+
+        logger.info(
+            '%s: Job ID %s: Validating Volume Types in Clusters...',
+            thread.name, batch_id
+        )
+
+        topology_data = AwsVolumeTypeValidation(all_dataframes)
+        result = topology_data.validate()
+
+        # Build response JSON
+        output = {
+            'id': batch_id,
+            'ai_service': 'ai_volumetype_validation',
+            'data': result.to_dict()
+        }
+
+        logger.info(
+            '%s: Job ID %s: Validation done, publishing...',
+            thread.name, batch_id
+        )
 
         # Pass to the next service
         try:
