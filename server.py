@@ -29,6 +29,11 @@ def index():
     next_service = APP.config['NEXT_MICROSERVICE_HOST']
     try:
         input_data = request.get_json(force=True, cache=False)
+
+        # Note: For insights data use `request.get_data()` instead
+        # raw_data = request.get_data()
+        # job_id = request.headers['source_id']
+        # except (BadRequest, KeyError):
     except BadRequest:
         return jsonify(
             status='ERROR',
@@ -40,6 +45,8 @@ def index():
     # Call the AI Worker here as shown below -
     # AI_Task_worker(input_data, next_service, b64_identity)
 
+    # Note: For insights data use `raw_data`
+    # AI_Task_worker(job_id, raw_data, next_service, b64_identity)
 
     APP.logger.info('Job started')
 
