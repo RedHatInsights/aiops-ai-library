@@ -1,8 +1,8 @@
 """AWS Volume Type Validation interface."""
-import functools
 import operator
 
 from pluck import pluck
+from collections import defaultdict
 
 
 class VolumeTypeValidationResult:
@@ -10,7 +10,7 @@ class VolumeTypeValidationResult:
 
     def __init__(self):
         """Initialize value that holds Result."""
-        self.invalid_items = {}
+        self.invalid_items = defaultdict(list)
 
     def add(self, source_id, message):
         """Append conclusive Result message to Cluser Id."""
