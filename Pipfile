@@ -8,7 +8,6 @@ requests = ">=2.20.0"
 gunicorn = "*"
 Flask = "*"
 pandas = "*"
-pluck = "*"
 
 [dev-packages]
 pylama = "*"

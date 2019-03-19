@@ -1,7 +1,6 @@
 """AWS Volume Type Validation interface."""
 import operator
 
-from pluck import pluck
 from collections import defaultdict
 
 
@@ -179,10 +178,10 @@ class AwsVolumeTypeValidation:  #noqa for R0903 Too few public methods
         bad_volumes = self._enrich_with_volume_type(
             bad_volumes[['id', 'name', 'source_ref', 'volume_type_id']].to_dict('records'))
 
-        bad_volumes_array = pluck(bad_volumes, 'id')
+        bad_volumes_ids = [v['id'] for v in bad_volumes]
 
         bad_vm_to_bad_volume_connection = \
-            group_volume_attachments.loc[group_volume_attachments['volume_id'].isin(bad_volumes_array)]
+            group_volume_attachments.loc[group_volume_attachments['volume_id'].isin(bad_volumes_ids)]
 
         for bad_volume in bad_volumes:
             bad_volume['vm_id'] = \
