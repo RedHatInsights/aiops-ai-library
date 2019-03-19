@@ -10,18 +10,26 @@ class VolumeTypeValidationResult:
 
     def __init__(self):
         """Initialize value that holds Result."""
+        self.volume_type_results = defaultdict(defaultdict)
         self.invalid_items = defaultdict(list)
+        self.hosts = defaultdict(list)
 
-    def add(self, source_id, message):
-        """Append conclusive Result message to Cluser Id."""
+    def add_recommendations(self, source_id, message):
+        """Append conclusive Result message to Cluser Id. Only include wrong clusters"""
         if source_id not in self.invalid_items:
             self.invalid_items[source_id] = []
 
         self.invalid_items[source_id].append(message)
 
+    def set_hosts(self, hosts):
+        """Assign per-host with recommendations dict."""
+        self.hosts = hosts
+
     def to_dict(self):
-        """Convert Result instance to dict."""
-        return self.invalid_items
+        """Convert Volume Type Results instance to dict."""
+        self.volume_type_results['clusters'] = self.invalid_items
+        self.volume_type_results['hosts'] = self.hosts
+        return self.volume_type_results
 
 
 class AwsVolumeTypeValidation:  #noqa for R0903 Too few public methods
@@ -49,7 +57,22 @@ class AwsVolumeTypeValidation:  #noqa for R0903 Too few public methods
                 container_nodes_groups.get(key, [])
             )
 
+        self._per_host_recommendations()
+
         return self.result
+
+    def _per_host_recommendations(self):
+        hosts = {}
+        for _index, host in self.vms.iterrows():
+            hosts[host.id] = {
+                "inventory_id": host.host_inventory_uuid,
+                "vm_id": host.id,
+                "name": host['name'],
+                "source_ref": host.source_ref,
+                "recommendations": self._recommendations(host.id)
+            }
+
+        self.result.set_hosts(hosts)
 
     def _find_invalid_in_groups(self, source_id, group_ids):
         lives_on_vm = self.container_nodes.lives_on_type == 'Vm'
@@ -137,8 +160,8 @@ class AwsVolumeTypeValidation:  #noqa for R0903 Too few public methods
                 recommendation['wrong_volume_type_volumes'] = bad_volumes
                 message['recommendations'].append(recommendation)
 
-            self.result.add(source_id=source_id,
-                            message=message)
+            self.result.add_recommendations(source_id=str(source_id),
+                                            message=message)
 
     def _find_bad_hosts(
             self,
@@ -178,6 +201,38 @@ class AwsVolumeTypeValidation:  #noqa for R0903 Too few public methods
             value['volume_type'] = \
                 self._volume_type_id_to_str(value['volume_type_id'])
         return items
+
+    def _recommendations(self, host_id):
+        recommendations = []
+
+        clusters = self.result.invalid_items.keys()
+
+        for cluster in clusters:
+            for recommendation in self.result.invalid_items[cluster][0]['recommendations']:
+                bad_hosts = recommendation['wrong_volume_type_vms']
+                bad_volumes = recommendation['wrong_volume_type_volumes']
+                bad_host_match = list(filter(lambda bad_host: bad_host['id'] == host_id, bad_hosts))
+                if bad_host_match:
+                    recommended_volume_type = \
+                        recommendation['recommended_volume_type']
+                    cluster_name = self.result.invalid_items[cluster][0]['cluster_name']
+                    recommendations.append(
+                        {
+                            "cluster_id": cluster,
+                            "cluster_name": cluster_name,
+                            "recommended_volume_type": recommended_volume_type,
+                            "volume_info": self._volumes_for_host(host_id, bad_volumes)
+                        }
+                    )
+
+        return recommendations
+
+    def _volumes_for_host(self, host_id, bad_volumes):
+        volumes = []
+        for volume in bad_volumes:
+            if volume['vm_id'] == host_id:
+                volumes.append(volume)
+        return volumes
 
     def _volume_type_id_to_str(self, volume_type_id):
         return self.volume_types[self.volume_types['id'] ==
