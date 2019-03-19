@@ -16,9 +16,6 @@ class VolumeTypeValidationResult:
 
     def add_recommendations(self, source_id, message):
         """Append conclusive Result message to Cluser Id. Only include wrong clusters"""
-        if source_id not in self.invalid_items:
-            self.invalid_items[source_id] = []
-
         self.invalid_items[source_id].append(message)
 
     def set_hosts(self, hosts):
@@ -85,21 +82,21 @@ class AwsVolumeTypeValidation:  #noqa for R0903 Too few public methods
             container_nodes_taggings[container_nodes_taggings['name'] ==
                                      "type"].copy()
 
-        if not type_taggings.empty:
-            # TODO For master nodes, it can happen
-            # that the nodes
-            # running etcd have io1 and the rest
-            # gp2. Lets ignore these for now, until we can
-            # identify nodes running etcd
-            non_master_nodes_ids = \
-                type_taggings[type_taggings['value'] !=
-                              "master"]['container_node_id']
-            self._find_invalid(
-                source_id,
-                container_nodes_group[container_nodes_group['id'].isin(non_master_nodes_ids)]
-            )
-        else:
+        if type_taggings.empty:
             self._find_invalid(source_id, container_nodes_group)
+            return
+        # TODO For master nodes, it can happen
+        # that the nodes
+        # running etcd have io1 and the rest
+        # gp2. Lets ignore these for now, until we can
+        # identify nodes running etcd
+        non_master_nodes_ids = \
+            type_taggings[type_taggings['value'] !=
+                          "master"]['container_node_id']
+        self._find_invalid(
+            source_id,
+            container_nodes_group[container_nodes_group['id'].isin(non_master_nodes_ids)]
+        )
 
     def _find_invalid(self, source_id, container_nodes_group):
         # Select container nodes of 1 group, but only those deployed on Vm
@@ -125,43 +122,42 @@ class AwsVolumeTypeValidation:  #noqa for R0903 Too few public methods
             container_nodes_group
     ):
         # volume_type_id of the whole group of volumes should be the same, if not add error message
-        if len(group_volumes['volume_type_id'].unique()) > 1:
-            # group_volumes.groupby('volume_type_id').groups
+        if not len(group_volumes['volume_type_id'].unique()) > 1:
+            return
+        # Find what is recommended volume type, it will be the one used by majority of nodes
+        volume_type_groups = group_volumes.groupby('volume_type_id').groups
+        volume_type_groups_sizes = \
+            [[key, len(group)] for key, group in volume_type_groups.items()]
+        recommended_volume_type, recommended_volume_type_size = \
+            max(volume_type_groups_sizes, key=operator.itemgetter(1))
 
-            # Find what is recommended volume type, it will be the one used by majority of nodes
-            volume_type_groups = group_volumes.groupby('volume_type_id').groups
-            volume_type_groups_sizes = \
-                [[key, len(group)] for key, group in volume_type_groups.items()]
-            recommended_volume_type, recommended_volume_type_size = \
-                max(volume_type_groups_sizes, key=operator.itemgetter(1))
-            same_sizes = [[key, value] for key, value in volume_type_groups_sizes if
-                          value == recommended_volume_type_size]
+        same_sizes = [key for key, value in volume_type_groups_sizes if value == recommended_volume_type_size]
 
-            message = {}
-            message['cluster_name'] = self.sources[(self.sources['id'] == source_id)].name.values[0]
-            message['description'] = "Cluster contains one or more instances " \
-                                     "with different volume types. "
-            message['recommendations'] = []
+        message = {}
+        message['cluster_name'] = self.sources[(self.sources['id'] == source_id)].name.values[0]
+        message['description'] = "Cluster contains one or more instances " \
+                                 "with different volume types. "
+        message['recommendations'] = []
 
-            if len(same_sizes) > 1:
-                message['description'] += "There are more alternative recommendations, " \
-                                      "because there isn't a majority of volume types used."
+        if len(same_sizes) > 1:
+            message['description'] += "There are more alternative recommendations, " \
+                                  "because there isn't a majority of volume types used."
 
-            for recommended_volume_type, _count in same_sizes:
-                recommendation = {}
-                bad_volumes, bad_hosts = self._find_bad_hosts(recommended_volume_type,
-                                                              group_volumes,
-                                                              group_volume_attachments,
-                                                              container_nodes_group)
+        for recommended_volume_type in same_sizes:
+            recommendation = {}
+            bad_volumes, bad_hosts = self._find_bad_hosts(recommended_volume_type,
+                                                          group_volumes,
+                                                          group_volume_attachments,
+                                                          container_nodes_group)
 
-                recommendation['recommended_volume_type'] = \
-                    self._volume_type_id_to_str(recommended_volume_type)
-                recommendation['wrong_volume_type_vms'] = bad_hosts
-                recommendation['wrong_volume_type_volumes'] = bad_volumes
-                message['recommendations'].append(recommendation)
+            recommendation['recommended_volume_type'] = \
+                self._volume_type_id_to_str(recommended_volume_type)
+            recommendation['wrong_volume_type_vms'] = bad_hosts
+            recommendation['wrong_volume_type_volumes'] = bad_volumes
+            message['recommendations'].append(recommendation)
 
-            self.result.add_recommendations(source_id=str(source_id),
-                                            message=message)
+        self.result.add_recommendations(source_id=str(source_id),
+                                        message=message)
 
     def _find_bad_hosts(
             self,
@@ -205,34 +201,28 @@ class AwsVolumeTypeValidation:  #noqa for R0903 Too few public methods
     def _recommendations(self, host_id):
         recommendations = []
 
-        clusters = self.result.invalid_items.keys()
-
-        for cluster in clusters:
+        for cluster in self.result.invalid_items.keys():
             for recommendation in self.result.invalid_items[cluster][0]['recommendations']:
                 bad_hosts = recommendation['wrong_volume_type_vms']
                 bad_volumes = recommendation['wrong_volume_type_volumes']
-                bad_host_match = list(filter(lambda bad_host: bad_host['id'] == host_id, bad_hosts))
-                if bad_host_match:
-                    recommended_volume_type = \
-                        recommendation['recommended_volume_type']
-                    cluster_name = self.result.invalid_items[cluster][0]['cluster_name']
-                    recommendations.append(
-                        {
-                            "cluster_id": cluster,
-                            "cluster_name": cluster_name,
-                            "recommended_volume_type": recommended_volume_type,
-                            "volume_info": self._volumes_for_host(host_id, bad_volumes)
-                        }
-                    )
+                bad_host_match = [h for h in bad_hosts if h['id'] == host_id]
+                if not bad_host_match:
+                    continue
+                recommended_volume_type = recommendation['recommended_volume_type']
+                cluster_name = self.result.invalid_items[cluster][0]['cluster_name']
+                recommendations.append(
+                    {
+                        "cluster_id": cluster,
+                        "cluster_name": cluster_name,
+                        "recommended_volume_type": recommended_volume_type,
+                        "volume_info": self._volumes_for_host(host_id, bad_volumes)
+                    }
+                )
 
         return recommendations
 
     def _volumes_for_host(self, host_id, bad_volumes):
-        volumes = []
-        for volume in bad_volumes:
-            if volume['vm_id'] == host_id:
-                volumes.append(volume)
-        return volumes
+        return [v for v in bad_volumes if v['vm_id'] == host_id]
 
     def _volume_type_id_to_str(self, volume_type_id):
         return self.volume_types[self.volume_types['id'] ==
