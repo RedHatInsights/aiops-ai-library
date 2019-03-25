@@ -14,6 +14,8 @@ def create_application():
     app = Flask(__name__)
     app.config['NEXT_MICROSERVICE_HOST'] = \
         os.environ.get('NEXT_MICROSERVICE_HOST')
+    app.config['AI_SERVICE'] = \
+        os.environ.get('AI_SERVICE')
 
     return app
 
@@ -28,6 +30,7 @@ ROOT_LOGGER.addHandler(default_handler)
 def index():
     """Pass data to next endpoint."""
     next_service = APP.config['NEXT_MICROSERVICE_HOST']
+    ai_service = APP.config['AI_SERVICE']
     try:
         input_data = request.get_json(force=True, cache=False)
 
@@ -52,6 +55,7 @@ def index():
     volume_type_validation_worker(
         input_data,
         next_service,
+        ai_service,
         b64_identity
     )
 
