@@ -47,6 +47,7 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
 def volume_type_validation_worker(
         job: dict,
         next_service: str,
+        ai_service: str,
         b64_identity: str = None
 ) -> Thread:
     """Validate Volume Types."""
@@ -65,7 +66,11 @@ def volume_type_validation_worker(
 
         # AI Processing of input data in `job` goes here
         # Store the AI Results in `output`
-        output = {}
+        output = {
+            'id': batch_id,
+            'ai_service': ai_service,
+            'data': 'RESULT_DATA'
+        }
 
         # Pass to the next service
         try:
