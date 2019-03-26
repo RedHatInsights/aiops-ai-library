@@ -7,6 +7,7 @@ name = "pypi"
 requests = ">=2.20.0"
 gunicorn = "*"
 Flask = "*"
+rad = {git = "https://github.com/parsahosseini/aiops-rad.git"}
 
 [dev-packages]
 pylama = "*"
@@ -14,7 +15,3 @@ pylama-pylint = "*"
 
 [requires]
 python_version = "3.6"
-
-[[source]]
-url = "https://pypi.org/simple"
-verify_ssl = true
