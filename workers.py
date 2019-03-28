@@ -80,7 +80,6 @@ def ai_service_worker(
             sample_size,
         )
         result = isolation_forest.predict(data_frame)
-        contrast = isolation_forest.contrast(data_frame)
 
         LOGGER.info(f'Analysis have {len(result)} rows in scores')
 
@@ -90,7 +89,6 @@ def ai_service_worker(
             'ai_service': env['ai_service'],
             'data': {
                 'scores': result.to_dict(),
-                'contrast': contrast.to_dict(),
             }
         }
 
