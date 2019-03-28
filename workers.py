@@ -44,7 +44,7 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
 #         b64_identity: str = None
 # )
 
-def volume_type_validation_worker(
+def ai_worker(
         job: dict,
         next_service: str,
         ai_service: str,
