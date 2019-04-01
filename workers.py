@@ -1,5 +1,6 @@
 import logging
 import math
+import uuid
 from threading import Thread, current_thread
 
 import requests
@@ -40,29 +41,36 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
 
     raise requests.HTTPError('All attempts failed')
 
+
 def ai_service_worker(
         job: dict,
         next_service: str,
         env: dict,
         b64_identity: str = None,
-    ) -> Thread:
+        ) -> Thread:
     """Outlier detection."""
-
     def worker() -> None:
         thread = current_thread()
         LOGGER.debug('%s: Worker started', thread.name)
 
         try:
-            batch_id, batch_data = job['account'], job['data']
+            account_id, batch_data = job['account'], job['data']
             rows = batch_data['total']
+            if rows == 0:
+                LOGGER.info(
+                    '%s: Job account ID %s: no system in data. Aborting...',
+                    thread.name, account_id
+                )
+                return
         except KeyError:
             LOGGER.error('%s: Invalid Job data, terminated.', thread.name)
             return
 
-        if rows == 0:
-            LOGGER.info('%s: Job account ID %s: no system in data. Aborting...', thread.name, batch_id)
-            return
-        LOGGER.info('%s: Job account ID %s: Started...', thread.name, batch_id)
+        batch_id = uuid.uuid1()
+        LOGGER.info(
+            '%s: Job account ID %s (batch ID: %s): Started...',
+            thread.name, account_id, batch_id
+        )
 
         # TODO: need to review these defaults
         num_trees = env['num_trees']
@@ -81,27 +89,29 @@ def ai_service_worker(
         )
         result = isolation_forest.predict(data_frame)
 
-        LOGGER.info(f'Analysis have {len(result)} rows in scores')
+        LOGGER.info('Analysis have %s rows in scores', len(result))
 
         # Build response JSON
         output = {
             'id': batch_id,
             'ai_service': env['ai_service'],
             'data': {
+                'account_id': account_id,
                 'scores': result.to_dict(),
             }
         }
 
+        url = f'http://{next_service}'
         LOGGER.info(
-            '%s: Job ID %s: detection done, publishing...',
-            thread.name, batch_id
+            '%s: Job ID %s: detection done, publishing to %s ...',
+            thread.name, batch_id, url
         )
 
         # Pass to the next service
         try:
             _retryable(
                 'post',
-                f'http://{next_service}',
+                url,
                 json=output,
                 headers={"x-rh-identity": b64_identity}
             )

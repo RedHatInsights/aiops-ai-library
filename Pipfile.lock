@@ -109,7 +109,7 @@
         },
         "rad": {
             "git": "https://github.com/parsahosseini/aiops-rad.git",
-            "ref": "7e5715c22ec2aa8d311e88f15586ae79a2eb333e"
+            "ref": "09550286c4783409fb001a2ceb435208609e90a6"
         },
         "requests": {
             "hashes": [

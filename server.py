@@ -59,6 +59,7 @@ def index():
         message='Outlier detection initiated.',
     )
 
+
 if __name__ == "__main__":
     PORT = int(os.environ.get("PORT", 8005))
     APP.run(port=PORT)
