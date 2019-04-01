@@ -373,24 +373,25 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
         shut_off_nodes = all_nodes[
             ~all_nodes['id'].isin(remaining_nodes['id'])]
 
-        message = {
-            "message": "For saving cost we can scale down nodes in a cluster",
-            "current_state": {
+        message = {}
+        message['cluster_name'] = self.sources[(self.sources['id'] == source_id)].name.values[0]
+        message['message'] = "For saving cost we can scale down nodes in a cluster"
+        message['current_state'] = {
                 "cpu_utilization": cpu_utilization,
                 "memory_utilization": memory_utilization,
                 "pods_utilization": pods_utilization,
                 "nodes": self._format_node_list(all_nodes).to_dict('records')
-            },
-            "after_scaledown": {
+        }
+        message['after_scaledown'] = {
                 "cpu_utilization": optimized_cpu_utilization,
                 "memory_utilization": optimized_memory_utilization,
                 "pods_utilization": optimized_pods_utilization,
                 "nodes":
                     self._format_node_list(remaining_nodes).to_dict('records')
-            },
-            "recommended_nodes_for_shut_down":
-                self._format_node_list(shut_off_nodes).to_dict('records')
         }
+        message['recommended_nodes_for_shut_down'] = \
+            self._format_node_list(shut_off_nodes).to_dict('records')
+
         self.result.add_recommendations(source_id, message)
 
     def _recommend_cost_savings(
