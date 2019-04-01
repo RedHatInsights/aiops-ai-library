@@ -1,5 +1,6 @@
 """AWS Volume Type Validation interface."""
 import operator
+import numpy as np
 
 from collections import defaultdict
 
@@ -71,31 +72,27 @@ class AwsVolumeTypeValidation:  #noqa for R0903 Too few public methods
         self.result.set_hosts(hosts)
 
     def _find_invalid_in_groups(self, source_id, group_ids):
-        lives_on_vm = self.container_nodes.lives_on_type == 'Vm'
-        container_nodes_group = \
-            self.container_nodes.loc[group_ids][lives_on_vm]
+        container_nodes_group = self.container_nodes.loc[group_ids]
+        container_nodes_group = container_nodes_group[
+            container_nodes_group.lives_on_type == 'Vm']
 
         container_nodes_taggings = self.container_nodes_tags
+        container_nodes_taggings = container_nodes_taggings[
+            container_nodes_taggings['container_node_id'].isin(
+                container_nodes_group['id'].astype('str'))]
+        type_taggings = container_nodes_taggings[
+            container_nodes_taggings['name'] == "type"].copy()
 
-        type_taggings = \
-            container_nodes_taggings[container_nodes_taggings['name'] ==
-                                     "type"].copy()
-
-        if type_taggings.empty:
+        if np.any(type_taggings):
+            # TODO For master nodes, it can happen that the nodes
+            # running etcd have io1 and the rest gp2.
+            # Lets ignore these for now, until we can identify nodes running etcd
+            non_master_nodes_ids = type_taggings[
+                type_taggings['value'] != "master"]['container_node_id']
+            self._find_invalid(source_id, container_nodes_group[
+                container_nodes_group['id'].isin(non_master_nodes_ids)])
+        else:
             self._find_invalid(source_id, container_nodes_group)
-            return
-        # TODO For master nodes, it can happen
-        # that the nodes
-        # running etcd have io1 and the rest
-        # gp2. Lets ignore these for now, until we can
-        # identify nodes running etcd
-        non_master_nodes_ids = \
-            type_taggings[type_taggings['value'] !=
-                          "master"]['container_node_id']
-        self._find_invalid(
-            source_id,
-            container_nodes_group[container_nodes_group['id'].isin(non_master_nodes_ids)]
-        )
 
     def _find_invalid(self, source_id, container_nodes_group):
         # Select container nodes of 1 group, but only those deployed on Vm
