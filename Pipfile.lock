@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "6ebf2478a0d7f910f2272695a8528e2660598fba31de78a17a8a768ecb2698b3"
+            "sha256": "d8a82da7930ee0da6136287bfde015e6cb9830ae37b40f3f68dec343f1275819"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -108,7 +108,7 @@
             "version": "==1.1.1"
         },
         "rad": {
-            "git": "https://github.com/parsahosseini/aiops-rad.git",
+            "git": "https://github.com/ManageIQ/aiops-rad.git",
             "ref": "09550286c4783409fb001a2ceb435208609e90a6"
         },
         "requests": {
