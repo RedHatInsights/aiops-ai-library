@@ -11,7 +11,9 @@ class AwsIdleCostSavingsResult:
 
     def __init__(self):
         """Initialize value that holds Result."""
+        self.idle_cost_savings = defaultdict(defaultdict)
         self.invalid_items = defaultdict(list)
+        self.hosts = defaultdict(list)
 
     def add_recommendations(self, source_id, message):
         """Append conclusive Result message to Cluser Id.
@@ -20,9 +22,15 @@ class AwsIdleCostSavingsResult:
         """
         self.invalid_items[source_id].append(message)
 
+    def set_hosts(self, hosts):
+        """Assign per-host with recommendations dict."""
+        self.hosts = hosts
+
     def to_dict(self):
         """Convert Idle Cost Savings Result instance to dict."""
-        return self.invalid_items
+        self.idle_cost_savings['clusters'] = self.invalid_items
+        self.idle_cost_savings['hosts'] = self.hosts
+        return self.idle_cost_savings
 
 
 class AwsIdleCostSavings:   #noqa  #Too few public methods
@@ -102,7 +110,42 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
                 active_containers
             )
 
+        self._per_host_recommendations()
+
         return self.result
+
+    def _per_host_recommendations(self):
+        hosts = {}
+        for _index, host in self.vms.iterrows():
+            hosts[host.id] = {
+                "inventory_id": host.host_inventory_uuid,
+                "vm_id": host.id,
+                "name": host['name'],
+                "source_ref": host.source_ref,
+                "recommendations": self._recommendations(host.id)
+            }
+
+        self.result.set_hosts(hosts)
+
+    def _recommendations(self, host_id):
+        recommendations = []
+
+        clusters = self.result.invalid_items.keys()
+
+        for cluster in clusters:
+            details = self.result.invalid_items[cluster][0]
+            bad_hosts = details['current_state']['nodes']
+            bad_host_match = [h for h in bad_hosts if h['id'] == host_id]
+            if bad_host_match:
+                cluster_name = self.result.invalid_items[cluster][0]['cluster_name']
+                recommendations.append(
+                    {
+                        "cluster_id": cluster,
+                        "details": details
+                    }
+                )
+
+        return recommendations
 
     def _get_pod_uuid(self, pod_uuid):
         return self.container_groups[
