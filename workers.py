@@ -66,7 +66,7 @@ def ai_service_worker(
             LOGGER.error('%s: Invalid Job data, terminated.', thread.name)
             return
 
-        batch_id = uuid.uuid1()
+        batch_id = str(uuid.uuid1())
         LOGGER.info(
             '%s: Job account ID %s (batch ID: %s): Started...',
             thread.name, account_id, batch_id
