@@ -6,7 +6,7 @@ from flask.logging import default_handler
 from werkzeug.exceptions import BadRequest
 
 
-from workers import ai_worker
+from workers import idle_cost_savings_worker
 
 
 def create_application():
@@ -52,7 +52,7 @@ def index():
     # Note: For insights data use `raw_data`
     # AI_Task_worker(job_id, raw_data, next_service, b64_identity)
 
-    ai_worker(
+    idle_cost_savings_worker(
         input_data,
         next_service,
         ai_service,
@@ -63,7 +63,7 @@ def index():
 
     return jsonify(
         status='OK',
-        message='Volume Type Validation initiated.'
+        message='Idle Cost Savings Analysis initiated.'
     )
 
 

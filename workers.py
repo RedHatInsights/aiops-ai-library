@@ -2,6 +2,9 @@ import logging
 from threading import Thread, current_thread
 
 import requests
+import pandas as pd
+
+from idle_cost_savings import AwsIdleCostSavings
 
 LOGGER = logging.getLogger()
 MAX_RETRIES = 3
@@ -44,7 +47,7 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
 #         b64_identity: str = None
 # )
 
-def ai_worker(
+def idle_cost_savings_worker(
         job: dict,
         next_service: str,
         ai_service: str,
@@ -65,10 +68,37 @@ def ai_worker(
 
         # AI Processing of input data in `job` goes here
         # Store the AI Results in `output`
+
+        entities = [
+            "container_nodes",
+            "container_nodes_tags",
+            "containers",
+            "container_groups",
+            "container_projects",
+            "container_resource_quotas",
+            "flavors",
+            "vms",
+            "sources"
+        ]
+
+        all_dataframes = {}
+
+        for entity in entities:
+            json_data = batch_data.get(entity)
+            all_dataframes[entity] = pd.DataFrame(json_data)
+
+        logger.info(
+            '%s: Job ID %s: Analyzing Idle Cost Savings...',
+            thread.name, batch_id
+        )
+
+        topology_data = AwsIdleCostSavings(all_dataframes)
+        result = topology_data.savings()
+
         output = {
             'id': batch_id,
             'ai_service': ai_service,
-            'data': 'RESULT_DATA'
+            'data': result.to_dict()
         }
 
         # Pass to the next service
