@@ -3,7 +3,7 @@ from threading import Thread, current_thread
 
 import requests
 
-logger = logging.getLogger()
+LOGGER = logging.getLogger()
 MAX_RETRIES = 3
 
 
@@ -26,7 +26,7 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
 
                 resp.raise_for_status()
             except (requests.HTTPError, requests.ConnectionError) as e:
-                logger.warning(
+                LOGGER.warning(
                     '%s: Request failed (attempt #%d), retrying: %s',
                     thread.name, attempt, str(e)
                 )
@@ -51,18 +51,17 @@ def ai_worker(
         b64_identity: str = None
 ) -> Thread:
     """Validate Volume Types."""
-
     def worker() -> None:
         thread = current_thread()
-        logger.debug('%s: Worker started', thread.name)
+        LOGGER.debug('%s: Worker started', thread.name)
 
         try:
-            batch_id, batch_data = job['id'], job['data']
+            batch_id, batch_data = job['id'], job['data']  # noqa
         except KeyError:
-            logger.error("%s: Invalid Job data, terminated.", thread.name)
+            LOGGER.error("%s: Invalid Job data, terminated.", thread.name)
             return
 
-        logger.info('%s: Job ID %s: Started...', thread.name, batch_id)
+        LOGGER.info('%s: Job ID %s: Started...', thread.name, batch_id)
 
         # AI Processing of input data in `job` goes here
         # Store the AI Results in `output`
@@ -81,12 +80,12 @@ def ai_worker(
                 headers={"x-rh-identity": b64_identity}
             )
         except requests.HTTPError as exception:
-            logger.error(
+            LOGGER.error(
                 '%s: Failed to pass data for "%s": %s',
                 thread.name, batch_id, exception
             )
 
-        logger.debug('%s: Done, exiting', thread.name)
+        LOGGER.debug('%s: Done, exiting', thread.name)
 
     thread = Thread(target=worker)
     thread.start()
