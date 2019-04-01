@@ -215,6 +215,14 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
             host_inventory_uuid = vm['host_inventory_uuid'].item()
         return host_inventory_uuid
 
+    def _get_host_name(self, x_id):
+        vm = self.vms[self.vms['id'] == x_id]
+
+        host_name = ""
+        if np.any(vm):
+            host_name = vm['name'].item()
+        return host_name
+
     def _get_amount_of_pods(self, amount_of_pods):
         return len(self.container_groups[
             self.container_groups['container_node_id'] == amount_of_pods])
@@ -228,15 +236,23 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
         nodes.loc[:, 'instance_type'] = nodes.id.apply(self._get_instance_type)
         nodes.loc[:, 'role'] = nodes.id.apply(self._get_type)
         nodes.loc[:, 'flavor_cpus'] = nodes.instance_type.apply(
-            self._get_flavor_cpu)
+            self._get_flavor_cpu
+        )
         nodes.loc[:, 'flavor_memory'] = nodes.instance_type.apply(
-            self._get_flavor_memory)
+            self._get_flavor_memory
+        )
 
         nodes.loc[:, '#pods'] = nodes.id.apply(
-            self._get_amount_of_pods)
+            self._get_amount_of_pods
+        )
 
         nodes.loc[:, 'host_inventory_uuid'] = nodes.lives_on_id.apply(
-            self._get_host_inventory_uuid)
+            self._get_host_inventory_uuid
+        )
+
+        nodes.loc[:, 'host_name'] = nodes.lives_on_id.apply(
+            self._get_host_name
+        )
 
         compute_container_nodes = nodes[nodes["role"].str.contains("compute")]
         return compute_container_nodes
@@ -380,6 +396,7 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
         return nodes.loc[:, [
             "id",
             "host_inventory_uuid",
+            "host_name",
             "allocatable_memory",
             "allocatable_cpus",
             "allocatable_pods",
