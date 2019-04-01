@@ -237,7 +237,7 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
             self._get_flavor_memory
         )
 
-        nodes.loc[:, '#pods'] = nodes.id.apply(
+        nodes.loc[:, 'no_of_pods'] = nodes.id.apply(
             self._get_amount_of_pods
         )
 
@@ -361,7 +361,7 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
             axis=0,
             skipna=True
         )
-        consumed = all_nodes['#pods'].sum(
+        consumed = all_nodes['no_of_pods'].sum(
             axis=0,
             skipna=True
         )
@@ -395,9 +395,9 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
             "allocatable_memory",
             "allocatable_cpus",
             "allocatable_pods",
-            "#pods"
+            "no_of_pods"
         ]].sort_values(
-            by='#pods',
+            by='no_of_pods',
             ascending=True
         )
 
@@ -470,7 +470,7 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
         shut_off_nodes = []
 
         for _index, node in container_nodes_group.sort_values(
-                by='#pods',
+                by='no_of_pods',
                 ascending=True
         ).iterrows():
 
