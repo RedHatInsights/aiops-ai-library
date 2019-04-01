@@ -128,7 +128,7 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
         self.result.set_hosts(hosts)
 
     def _recommendations(self, host_id):
-        recommendations = []
+        recommendations = {}
 
         clusters = self.result.invalid_items.keys()
 
@@ -137,13 +137,8 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
             bad_hosts = details['current_state']['nodes']
             bad_host_match = [h for h in bad_hosts if h['id'] == host_id]
             if bad_host_match:
-                cluster_name = self.result.invalid_items[cluster][0]['cluster_name']
-                recommendations.append(
-                    {
-                        "cluster_id": cluster,
-                        "details": details
-                    }
-                )
+                recommendations['cluster_id'] = cluster
+                recommendations['details'] = details
 
         return recommendations
 
