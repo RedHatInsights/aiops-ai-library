@@ -218,6 +218,9 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
             host_name = vm['name'].item()
         return host_name
 
+    def _get_allocatable_memory_gb(self, x_memory):
+        return x_memory / 1024 ** 3
+
     def _get_amount_of_pods(self, amount_of_pods):
         return len(self.container_groups[
             self.container_groups['container_node_id'] == amount_of_pods])
@@ -247,6 +250,10 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
 
         nodes.loc[:, 'host_name'] = nodes.lives_on_id.apply(
             self._get_host_name
+        )
+
+        nodes.loc[:, 'allocatable_memory_gb'] = nodes.allocatable_memory.apply(
+            self._get_allocatable_memory_gb
         )
 
         compute_container_nodes = nodes[nodes["role"].str.contains("compute")]
@@ -393,6 +400,7 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
             "host_inventory_uuid",
             "host_name",
             "allocatable_memory",
+            "allocatable_memory_gb",
             "allocatable_cpus",
             "allocatable_pods",
             "no_of_pods"
