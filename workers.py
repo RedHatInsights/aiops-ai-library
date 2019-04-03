@@ -75,7 +75,7 @@ def ai_worker(
         try:
             _retryable(
                 'post',
-                f'http://{next_service}',
+                next_service,
                 json=output,
                 headers={"x-rh-identity": b64_identity}
             )
