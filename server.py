@@ -12,10 +12,8 @@ from workers import idle_cost_savings_worker
 def create_application():
     """Create Flask application instance with AWS client enabled."""
     app = Flask(__name__)
-    app.config['NEXT_MICROSERVICE_HOST'] = \
-        os.environ.get('NEXT_MICROSERVICE_HOST')
-    app.config['AI_SERVICE'] = \
-        os.environ.get('AI_SERVICE')
+    app.config['NEXT_SERVICE_URL'] = os.environ.get('NEXT_SERVICE_URL')
+    app.config['AI_SERVICE'] = os.environ.get('AI_SERVICE')
 
     return app
 
@@ -29,7 +27,7 @@ ROOT_LOGGER.addHandler(default_handler)
 @APP.route("/", methods=['POST', 'PUT'])
 def index():
     """Pass data to next endpoint."""
-    next_service = APP.config['NEXT_MICROSERVICE_HOST']
+    next_service = APP.config['NEXT_SERVICE_URL']
     ai_service = APP.config['AI_SERVICE']
     try:
         input_data = request.get_json(force=True, cache=False)
