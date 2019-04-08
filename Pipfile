@@ -7,7 +7,6 @@ name = "pypi"
 requests = ">=2.20.0"
 gunicorn = "*"
 Flask = "*"
-rad = {editable = true,git = "https://github.com/parsahosseini/aiops-rad.git",ref = "isolationforest"}
 
 [dev-packages]
 pylama = "*"
