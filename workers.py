@@ -42,6 +42,31 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
     raise requests.HTTPError('All attempts failed')
 
 
+def compile_scores(scores):
+    scores_output = {}
+    for i, score in enumerate(scores, 1):
+        data = {
+            "inventory_id": score["id"],
+            "recommendations": {
+                'depth': score["depth"],
+                'is_anomalous': score["is_anomalous"],
+                'score': score["score"],
+            },
+        }
+        scores_output[i] = data
+    return scores_output
+
+
+def compile_charts(charts):
+    chart_output = []
+    for chart_type, svg in charts.items():
+        chart_output.append({
+            "chart_type": chart_type,
+            "svg_contents": svg,
+        })
+    return chart_output
+
+
 def ai_service_worker(
         job: dict,
         next_service: str,
@@ -88,6 +113,13 @@ def ai_service_worker(
             sample_size,
         )
         result = isolation_forest.predict(data_frame)
+        scores = compile_scores(result)
+        contrasts = isolation_forest.contrast()
+        try:
+            charts = compile_charts(isolation_forest.to_report())
+        except NameError:
+            charts = []
+            LOGGER.warning("No chart is produced because matplotlib not properly installed")
 
         LOGGER.info('Analysis have %s rows in scores', len(result))
 
@@ -96,8 +128,10 @@ def ai_service_worker(
             'id': batch_id,
             'ai_service': env['ai_service'],
             'data': {
-                'account_id': account_id,
-                'scores': result.to_dict(),
+                'account_number': account_id,
+                'hosts': scores,
+                'contrasts': contrasts,
+                'charts': charts,
             }
         }
 

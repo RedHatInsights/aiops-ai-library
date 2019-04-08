@@ -7,11 +7,12 @@ name = "pypi"
 requests = ">=2.20.0"
 gunicorn = "*"
 Flask = "*"
-rad = {editable = true,git = "https://github.com/ManageIQ/aiops-rad.git"}
+rad = {editable = true,git = "https://github.com/parsahosseini/aiops-rad.git",ref = "isolationforest"}
 
 [dev-packages]
 pylama = "*"
 pylama-pylint = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.6"
