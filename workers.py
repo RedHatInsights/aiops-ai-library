@@ -87,7 +87,6 @@ def idle_cost_savings_worker(
             json_data = batch_data.get(entity)
             all_dataframes[entity] = pd.DataFrame(json_data)
 
-
         LOGGER.info(
             '%s: Job ID %s: Analyzing Idle Cost Savings...',
             thread.name, batch_id

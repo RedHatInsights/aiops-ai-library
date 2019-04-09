@@ -36,7 +36,7 @@ class AwsIdleCostSavingsResult:
 class AwsIdleCostSavings:   #noqa  #Too few public methods
     """Idle Cost Savings."""
 
-    # TODO:
+    # TODO: #noqa
     # 1. We shouldn't mark reserved instances for shutdown, we'll need data for
     # recognizing reserved instances and maybe the reservation timeline.
     # 2. We need inventory of autoscaling groups, since majority of nodes must
@@ -166,11 +166,11 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
         containers.loc[
             :, 'container_node_id'] = containers.container_group_id.apply(
                 self._get_container_node_id
-        )
+            )
         containers.loc[
             :, 'project_name'] = containers.container_group_id.apply(
                 self._get_project_name
-        )
+            )
         containers.loc[:, 'cpu_limit_or_request'] = containers.id.apply(
             self._get_container_cpu_limit
         )
@@ -337,7 +337,7 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
             axis=0,
             skipna=True
         )
-        # TODO use request_or_limit, in a case that has only limit defined
+        # TODO use request_or_limit, in a case that has only limit defined #noqa
         consumed = containers['cpu_request'].sum(
             axis=0,
             skipna=True
@@ -437,20 +437,21 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
             ~all_nodes['id'].isin(remaining_nodes['id'])]
 
         message = {}
-        message['cluster_name'] = self.sources[(self.sources['id'] == source_id)].name.values[0]
-        message['message'] = "For saving cost we can scale down nodes in a cluster"
+        message['cluster_name'] = \
+            self.sources[(self.sources['id'] == source_id)].name.values[0]
+        message['message'] = \
+            "For saving cost we can scale down nodes in a cluster"
         message['current_state'] = {
-                "cpu_utilization": cpu_utilization,
-                "memory_utilization": memory_utilization,
-                "pods_utilization": pods_utilization,
-                "nodes": self._format_node_list(all_nodes).to_dict('records')
+            "cpu_utilization": cpu_utilization,
+            "memory_utilization": memory_utilization,
+            "pods_utilization": pods_utilization,
+            "nodes": self._format_node_list(all_nodes).to_dict('records')
         }
         message['after_scaledown'] = {
-                "cpu_utilization": optimized_cpu_utilization,
-                "memory_utilization": optimized_memory_utilization,
-                "pods_utilization": optimized_pods_utilization,
-                "nodes":
-                    self._format_node_list(remaining_nodes).to_dict('records')
+            "cpu_utilization": optimized_cpu_utilization,
+            "memory_utilization": optimized_memory_utilization,
+            "pods_utilization": optimized_pods_utilization,
+            "nodes": self._format_node_list(remaining_nodes).to_dict('records')
         }
         message['recommended_nodes_for_shut_down'] = \
             self._format_node_list(shut_off_nodes).to_dict('records')
