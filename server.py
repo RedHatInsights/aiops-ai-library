@@ -14,9 +14,9 @@ def create_application():
     app.config['AI_SERVICE'] = os.environ.get('AI_SERVICE')
     app.config['NEXT_SERVICE_URL'] = os.environ.get('NEXT_SERVICE_URL')
     app.config['IF_NUM_TREES_FACTOR'] = \
-        float(os.environ.get('IF_NUM_TREES_FACTOR') or '0.2')
+        float(os.environ.get('IF_NUM_TREES_FACTOR', .2))
     app.config['IF_SAMPLE_SIZE_FACTOR'] = \
-        float(os.environ.get('IF_SAMPLE_SIZE_FACTOR') or '0.2')
+        float(os.environ.get('IF_SAMPLE_SIZE_FACTOR', .2))
     return app
 
 

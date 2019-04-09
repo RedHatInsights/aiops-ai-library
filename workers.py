@@ -139,9 +139,6 @@ def ai_service_worker(
             sample_size,
         )
         result = isolation_forest.predict(data_frame)
-        scores = compile_scores(result)
-        contrasts = isolation_forest.contrast()
-        charts = compile_charts(isolation_forest.to_report())
 
         LOGGER.info('Analysis have %s rows in scores', len(result))
 
@@ -151,11 +148,11 @@ def ai_service_worker(
             'ai_service': env['ai_service'],
             'data': {
                 'account_number': account_id,
-                'hosts': scores,
-                'common_data': [
-                    {'contrasts': contrasts},
-                    {'charts': charts},
-                ]
+                'hosts': compile_scores(result),
+                'common_data': {
+                    'contrasts': isolation_forest.contrast(),
+                    'charts': compile_charts(isolation_forest.to_report()),
+                }
             }
         }
 
