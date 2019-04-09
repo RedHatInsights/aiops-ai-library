@@ -125,11 +125,7 @@ def ai_service_worker(
         result = isolation_forest.predict(data_frame)
         scores = compile_scores(result)
         contrasts = isolation_forest.contrast()
-        try:
-            charts = compile_charts(isolation_forest.to_report())
-        except NameError:
-            charts = []
-            LOGGER.warning("Cannot plot chart without matplotlib")
+        charts = compile_charts(isolation_forest.to_report())
 
         LOGGER.info('Analysis have %s rows in scores', len(result))
 
@@ -147,17 +143,16 @@ def ai_service_worker(
             }
         }
 
-        url = f'http://{next_service}'
         LOGGER.info(
             '%s: Job ID %s: detection done, publishing to %s ...',
-            thread.name, batch_id, url
+            thread.name, batch_id, next_service
         )
 
         # Pass to the next service
         try:
             _retryable(
                 'post',
-                url,
+                next_service,
                 json=output,
                 headers={"x-rh-identity": b64_identity}
             )

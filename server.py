@@ -12,8 +12,7 @@ def create_application():
     """Create Flask application instance."""
     app = Flask(__name__)
     app.config['AI_SERVICE'] = os.environ.get('AI_SERVICE')
-    app.config['NEXT_MICROSERVICE_HOST'] = \
-        os.environ.get('NEXT_MICROSERVICE_HOST')
+    app.config['NEXT_SERVICE_URL'] = os.environ.get('NEXT_SERVICE_URL')
     app.config['IF_NUM_TREES'] = int(os.environ.get('IF_NUM_TREES') or '0')
     app.config['IF_SAMPLE_SIZE'] = int(os.environ.get('IF_SAMPLE_SIZE') or '0')
     return app
@@ -28,7 +27,7 @@ ROOT_LOGGER.addHandler(default_handler)
 @APP.route("/", methods=['POST', 'PUT'])
 def index():
     """Pass data to next endpoint."""
-    next_service = APP.config['NEXT_MICROSERVICE_HOST']
+    next_service = APP.config['NEXT_SERVICE_URL']
     env = {
         'ai_service': APP.config['AI_SERVICE'],
         'num_trees': APP.config['IF_NUM_TREES'],
