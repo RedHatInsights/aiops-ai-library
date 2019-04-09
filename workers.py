@@ -42,6 +42,26 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
     raise requests.HTTPError('All attempts failed')
 
 
+def isolation_forest_params(num_trees, sample_size, data_rows):
+    """Fine tune parameters for IsolationForest.
+
+    :param num_trees: default num_trees
+    :params sample_size: default sample_size
+    :data_rows: data size to be trained
+    :return: the tuned values
+    """
+    # TODO: need to review these defaults
+    num_trees_out = num_trees
+    sample_size_out = sample_size
+
+    if num_trees > data_rows/2 or num_trees == 0:
+        num_trees_out = int(math.log(data_rows))
+
+    if sample_size > data_rows/2 or sample_size == 0:
+        sample_size_out = int(data_rows/num_trees_out)
+    return num_trees_out, sample_size_out
+
+
 def compile_scores(scores):
     """Arrange scores into format that fits consumer logic.
 
@@ -107,14 +127,12 @@ def ai_service_worker(
             thread.name, account_id, batch_id
         )
 
-        # TODO: need to review these defaults
-        num_trees = env['num_trees']
-        if num_trees > rows/2 or num_trees == 0:
-            num_trees = int(math.log(rows))
+        num_trees, sample_size = isolation_forest_params(
+            env['num_trees'],
+            env['sample_size'],
+            rows,
+        )
 
-        sample_size = env['sample_size']
-        if sample_size > rows/2 or sample_size == 0:
-            sample_size = int(rows/num_trees)
         data_frame = rad.inventory_data_to_pandas(batch_data)
         data_frame, _mapping = rad.preprocess(data_frame)
         isolation_forest = rad.IsolationForest(

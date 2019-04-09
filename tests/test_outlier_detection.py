@@ -69,3 +69,14 @@ class TestRadOutput:
         charts_dump = json.dumps(charts, sort_keys=True, indent=2)
         expected_dump = json.dumps(expected, sort_keys=True, indent=2)
         assert charts_dump == expected_dump
+
+    def test_isolation_forest_params(self):
+        """Parameters are within bounds."""
+        data_size = 10
+        trees, sample_size = workers.isolation_forest_params(0, 0, data_size)
+        assert 0 < trees < data_size
+        assert 0 < sample_size < data_size
+
+        trees, sample_size = workers.isolation_forest_params(10, 10, data_size)
+        assert 0 < trees < data_size
+        assert 0 < sample_size < data_size
