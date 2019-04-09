@@ -13,8 +13,10 @@ def create_application():
     app = Flask(__name__)
     app.config['AI_SERVICE'] = os.environ.get('AI_SERVICE')
     app.config['NEXT_SERVICE_URL'] = os.environ.get('NEXT_SERVICE_URL')
-    app.config['IF_NUM_TREES'] = int(os.environ.get('IF_NUM_TREES') or '0')
-    app.config['IF_SAMPLE_SIZE'] = int(os.environ.get('IF_SAMPLE_SIZE') or '0')
+    app.config['IF_NUM_TREES_FACTOR'] = \
+        float(os.environ.get('IF_NUM_TREES_FACTOR') or '0.2')
+    app.config['IF_SAMPLE_SIZE_FACTOR'] = \
+        float(os.environ.get('IF_SAMPLE_SIZE_FACTOR') or '0.2')
     return app
 
 
@@ -30,8 +32,8 @@ def index():
     next_service = APP.config['NEXT_SERVICE_URL']
     env = {
         'ai_service': APP.config['AI_SERVICE'],
-        'num_trees': APP.config['IF_NUM_TREES'],
-        'sample_size': APP.config['IF_SAMPLE_SIZE'],
+        'num_trees_factor': APP.config['IF_NUM_TREES_FACTOR'],
+        'sample_size_factor': APP.config['IF_SAMPLE_SIZE_FACTOR'],
     }
 
     try:

@@ -1,5 +1,4 @@
 import logging
-import math
 import uuid
 from threading import Thread, current_thread
 
@@ -42,24 +41,23 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
     raise requests.HTTPError('All attempts failed')
 
 
-def isolation_forest_params(num_trees, sample_size, data_rows):
+def isolation_forest_params(trees_factor, sample_factor, data_rows):
     """Fine tune parameters for IsolationForest.
 
-    :param num_trees: default num_trees
-    :params sample_size: default sample_size
+    :param num_trees: num_trees factor
+    :params sample_size: sample_size factor
     :data_rows: data size to be trained
     :return: the tuned values
     """
-    # TODO: need to review these defaults
-    num_trees_out = num_trees
-    sample_size_out = sample_size
-
-    if num_trees > data_rows/2 or num_trees == 0:
-        num_trees_out = int(math.log(data_rows))
-
-    if sample_size > data_rows/2 or sample_size == 0:
-        sample_size_out = int(data_rows/num_trees_out)
-    return num_trees_out, sample_size_out
+    if 0.001 < trees_factor < 1.0:
+        num_trees = data_rows * trees_factor
+    else:
+        num_trees = data_rows * 0.2
+    if 0.001 < sample_factor < 1.0:
+        sample_size = data_rows * sample_factor
+    else:
+        sample_size = data_rows * 0.2
+    return int(num_trees), int(sample_size)
 
 
 def compile_scores(scores):
@@ -128,8 +126,8 @@ def ai_service_worker(
         )
 
         num_trees, sample_size = isolation_forest_params(
-            env['num_trees'],
-            env['sample_size'],
+            env['num_trees_factor'],
+            env['sample_size_factor'],
             rows,
         )
 

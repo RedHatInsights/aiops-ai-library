@@ -77,6 +77,6 @@ class TestRadOutput:
         assert 0 < trees < data_size
         assert 0 < sample_size < data_size
 
-        trees, sample_size = workers.isolation_forest_params(10, 10, data_size)
+        trees, sample_size = workers.isolation_forest_params(1, 1.1, data_size)
         assert 0 < trees < data_size
         assert 0 < sample_size < data_size
