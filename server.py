@@ -6,16 +6,14 @@ from flask.logging import default_handler
 from werkzeug.exceptions import BadRequest
 
 
-from workers import ai_worker
+from workers import idle_cost_savings_worker
 
 
 def create_application():
     """Create Flask application instance with AWS client enabled."""
     app = Flask(__name__)
-    app.config['NEXT_MICROSERVICE_HOST'] = \
-        os.environ.get('NEXT_MICROSERVICE_HOST')
-    app.config['AI_SERVICE'] = \
-        os.environ.get('AI_SERVICE')
+    app.config['NEXT_SERVICE_URL'] = os.environ.get('NEXT_SERVICE_URL')
+    app.config['AI_SERVICE'] = os.environ.get('AI_SERVICE')
 
     return app
 
@@ -29,7 +27,7 @@ ROOT_LOGGER.addHandler(default_handler)
 @APP.route("/", methods=['POST', 'PUT'])
 def index():
     """Pass data to next endpoint."""
-    next_service = APP.config['NEXT_MICROSERVICE_HOST']
+    next_service = APP.config['NEXT_SERVICE_URL']
     ai_service = APP.config['AI_SERVICE']
     try:
         input_data = request.get_json(force=True, cache=False)
@@ -52,7 +50,7 @@ def index():
     # Note: For insights data use `raw_data`
     # AI_Task_worker(job_id, raw_data, next_service, b64_identity)
 
-    ai_worker(
+    idle_cost_savings_worker(
         input_data,
         next_service,
         ai_service,
@@ -63,7 +61,7 @@ def index():
 
     return jsonify(
         status='OK',
-        message='Volume Type Validation initiated.'
+        message='Idle Cost Savings Analysis initiated.'
     )
 
 
