@@ -43,8 +43,13 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
 
 
 def compile_scores(scores):
+    """Arrange scores into format that fits consumer logic.
+
+    :param scores: output from prediction
+    :return: scores in agreed on format
+    """
     scores_output = {}
-    for i, score in enumerate(scores, 1):
+    for seq, score in enumerate(scores, 1):
         data = {
             "inventory_id": score["id"],
             "recommendations": {
@@ -53,11 +58,16 @@ def compile_scores(scores):
                 'score': score["score"],
             },
         }
-        scores_output[i] = data
+        scores_output[seq] = data
     return scores_output
 
 
 def compile_charts(charts):
+    """Arrange charts into format that fits consumer logic.
+
+    :param scores: output from prediction
+    :return: scores in agreed on format
+    """
     chart_output = []
     for chart_type, svg in charts.items():
         chart_output.append({
@@ -119,7 +129,7 @@ def ai_service_worker(
             charts = compile_charts(isolation_forest.to_report())
         except NameError:
             charts = []
-            LOGGER.warning("No chart is produced because matplotlib not properly installed")
+            LOGGER.warning("Cannot plot chart without matplotlib")
 
         LOGGER.info('Analysis have %s rows in scores', len(result))
 
