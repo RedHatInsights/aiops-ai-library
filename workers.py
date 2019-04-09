@@ -130,8 +130,10 @@ def ai_service_worker(
             'data': {
                 'account_number': account_id,
                 'hosts': scores,
-                'contrasts': contrasts,
-                'charts': charts,
+                'common_data': [
+                    {'contrasts': contrasts},
+                    {'charts': charts},
+                ]
             }
         }
 
