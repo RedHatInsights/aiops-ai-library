@@ -110,7 +110,7 @@ def volume_type_validation_worker(
         try:
             _retryable(
                 'post',
-                f'http://{next_service}',
+                next_service,
                 json=output,
                 headers={"x-rh-identity": b64_identity}
             )
