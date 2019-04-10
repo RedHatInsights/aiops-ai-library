@@ -7,11 +7,12 @@ name = "pypi"
 requests = ">=2.20.0"
 gunicorn = "*"
 Flask = "*"
-rad = {git = "https://github.com/ManageIQ/aiops-rad.git",ref = "v0.8.2"}
+rad = {editable = true,git = "https://github.com/ManageIQ/aiops-rad.git",ref = "v0.9.1"}
 
 [dev-packages]
 pylama = "*"
 pylama-pylint = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.6"

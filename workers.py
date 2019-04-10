@@ -1,5 +1,4 @@
 import logging
-import math
 import uuid
 from threading import Thread, current_thread
 
@@ -42,6 +41,60 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
     raise requests.HTTPError('All attempts failed')
 
 
+def isolation_forest_params(trees_factor, sample_factor, data_rows):
+    """Fine tune parameters for IsolationForest.
+
+    :param num_trees: num_trees factor
+    :params sample_size: sample_size factor
+    :data_rows: data size to be trained
+    :return: the tuned values
+    """
+    if 0.001 < trees_factor < 1.0:
+        num_trees = data_rows * trees_factor
+    else:
+        num_trees = data_rows * 0.2
+    if 0.001 < sample_factor < 1.0:
+        sample_size = data_rows * sample_factor
+    else:
+        sample_size = data_rows * 0.2
+    return int(num_trees), int(sample_size)
+
+
+def compile_scores(scores):
+    """Arrange scores into format that fits consumer logic.
+
+    :param scores: output from prediction
+    :return: scores in agreed on format
+    """
+    scores_output = {}
+    for seq, score in enumerate(scores, 1):
+        data = {
+            "inventory_id": score["id"],
+            "recommendations": {
+                'depth': score["depth"],
+                'is_anomalous': score["is_anomalous"],
+                'score': score["score"],
+            },
+        }
+        scores_output[seq] = data
+    return scores_output
+
+
+def compile_charts(charts):
+    """Arrange charts into format that fits consumer logic.
+
+    :param scores: output from prediction
+    :return: scores in agreed on format
+    """
+    chart_output = []
+    for chart_type, svg in charts.items():
+        chart_output.append({
+            "chart_type": chart_type,
+            "svg_contents": svg,
+        })
+    return chart_output
+
+
 def ai_service_worker(
         job: dict,
         next_service: str,
@@ -72,14 +125,12 @@ def ai_service_worker(
             thread.name, account_id, batch_id
         )
 
-        # TODO: need to review these defaults
-        num_trees = env['num_trees']
-        if num_trees > rows/2 or num_trees == 0:
-            num_trees = int(math.log(rows))
+        num_trees, sample_size = isolation_forest_params(
+            env['num_trees_factor'],
+            env['sample_size_factor'],
+            rows,
+        )
 
-        sample_size = env['sample_size']
-        if sample_size > rows/2 or sample_size == 0:
-            sample_size = int(rows/num_trees)
         data_frame = rad.inventory_data_to_pandas(batch_data)
         data_frame, _mapping = rad.preprocess(data_frame)
         isolation_forest = rad.IsolationForest(
@@ -96,22 +147,25 @@ def ai_service_worker(
             'id': batch_id,
             'ai_service': env['ai_service'],
             'data': {
-                'account_id': account_id,
-                'scores': result.to_dict(),
+                'account_number': account_id,
+                'hosts': compile_scores(result),
+                'common_data': {
+                    'contrasts': isolation_forest.contrast(),
+                    'charts': compile_charts(isolation_forest.to_report()),
+                }
             }
         }
 
-        url = f'http://{next_service}'
         LOGGER.info(
             '%s: Job ID %s: detection done, publishing to %s ...',
-            thread.name, batch_id, url
+            thread.name, batch_id, next_service
         )
 
         # Pass to the next service
         try:
             _retryable(
                 'post',
-                url,
+                next_service,
                 json=output,
                 headers={"x-rh-identity": b64_identity}
             )
