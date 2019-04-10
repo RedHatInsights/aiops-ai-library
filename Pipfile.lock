@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "4188ad8609f5d1a38e643ed876f10063a4a28922f28d037ab0845a345f9a8784"
+            "sha256": "d4bc272b6a023b083b12015ba5e1b0ac95e4c488d43767ec25c18497f5c0566a"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -282,15 +282,15 @@
         },
         "pytz": {
             "hashes": [
-                "sha256:32b0891edff07e28efe91284ed9c31e123d84bea3fd98e1f72be2508f43ef8d9",
-                "sha256:d5f05e487007e29e03409f9398d074e158d920d36eb82eaf66fb1136b0c5374c"
+                "sha256:303879e36b721603cc54604edcac9d20401bdbe31e1e4fdee5b9f98d5d31dfda",
+                "sha256:d747dd3d23d77ef44c6a3526e274af6efeb0a6f1afd5a69ba4d5be4098c8e141"
             ],
-            "version": "==2018.9"
+            "version": "==2019.1"
         },
         "rad": {
             "editable": true,
             "git": "https://github.com/ManageIQ/aiops-rad.git",
-            "ref": "8518b1b7157c7bdebca01b85a29ff6f2afce865f"
+            "ref": "e9a203d0dfd5da7c6efbb5551c6def5e0c39133f"
         },
         "requests": {
             "hashes": [
