@@ -60,10 +60,11 @@ def isolation_forest_params(trees_factor, sample_factor, data_rows):
     return int(num_trees), int(sample_size)
 
 
-def compile_scores(scores):
+def compile_scores(scores, host_by_id):
     """Arrange scores into format that fits consumer logic.
 
     :param scores: output from prediction
+    :param host_by_id: hosts dict with id as key
     :return: scores in agreed on format
     """
     scores_output = {}
@@ -74,6 +75,7 @@ def compile_scores(scores):
                 'depth': score["depth"],
                 'is_anomalous': score["is_anomalous"],
                 'score': score["score"],
+                'display_name': host_by_id[score["id"]]['display_name'],
             },
         }
         scores_output[seq] = data
@@ -139,6 +141,7 @@ def ai_service_worker(
             sample_size,
         )
         result = isolation_forest.predict(data_frame)
+        host_by_id = {x['id']: x for x in batch_data['results']}
 
         LOGGER.info('Analysis have %s rows in scores', len(result))
 
@@ -148,7 +151,7 @@ def ai_service_worker(
             'ai_service': env['ai_service'],
             'data': {
                 'account_number': account_id,
-                'hosts': compile_scores(result),
+                'hosts': compile_scores(result, host_by_id),
                 'common_data': {
                     'contrasts': isolation_forest.contrast(),
                     'charts': compile_charts(isolation_forest.to_report()),
