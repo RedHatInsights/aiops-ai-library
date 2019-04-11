@@ -26,7 +26,15 @@ class TestRadOutput:
                 'score': 0.44658855423307714
             },
         ]
-        scores = workers.compile_scores(results)
+        host_by_id = {
+            '18d00a23-dd63-41b0-8617-7f58b56dc71e': {
+                'display_name': 'hello'
+            },
+            '59203d52-65a6-4b89-be40-f4f557136208': {
+                'display_name': 'world'
+            }
+        }
+        scores = workers.compile_scores(results, host_by_id)
         expected = {
             "1": {
                 "inventory_id": '18d00a23-dd63-41b0-8617-7f58b56dc71e',
@@ -34,6 +42,7 @@ class TestRadOutput:
                     'depth': 2.9380611476541687,
                     'is_anomalous': True,
                     'score': 0.5979060442543648,
+                    'display_name': 'hello',
                 },
             },
             "2": {
@@ -42,6 +51,7 @@ class TestRadOutput:
                     'depth': 4.604944571625036,
                     'is_anomalous': False,
                     'score': 0.44658855423307714,
+                    'display_name': 'world'
                 },
             },
         }
