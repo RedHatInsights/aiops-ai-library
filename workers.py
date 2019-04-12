@@ -60,43 +60,6 @@ def isolation_forest_params(trees_factor, sample_factor, data_rows):
     return int(num_trees), int(sample_size)
 
 
-def compile_scores(scores, host_by_id):
-    """Arrange scores into format that fits consumer logic.
-
-    :param scores: output from prediction
-    :param host_by_id: hosts dict with id as key
-    :return: scores in agreed on format
-    """
-    scores_output = {}
-    for seq, score in enumerate(scores, 1):
-        data = {
-            "inventory_id": score["id"],
-            "recommendations": {
-                'depth': score["depth"],
-                'is_anomalous': score["is_anomalous"],
-                'score': score["score"],
-                'display_name': host_by_id[score["id"]]['display_name'],
-            },
-        }
-        scores_output[seq] = data
-    return scores_output
-
-
-def compile_charts(charts):
-    """Arrange charts into format that fits consumer logic.
-
-    :param scores: output from prediction
-    :return: scores in agreed on format
-    """
-    chart_output = []
-    for chart_type, svg in charts.items():
-        chart_output.append({
-            "chart_type": chart_type,
-            "svg_contents": svg,
-        })
-    return chart_output
-
-
 def ai_service_worker(
         job: dict,
         next_service: str,
@@ -140,12 +103,12 @@ def ai_service_worker(
             num_trees,
             sample_size,
         )
-        result = isolation_forest.predict(
+        results = isolation_forest.predict(
             data_frame,
             min_score=env['min_score'],
         )
 
-        LOGGER.info('Analysis have %s rows in scores', len(result))
+        LOGGER.info('Analysis have %s rows in scores', len(results))
 
         # Build response JSON
         output = {
@@ -153,10 +116,9 @@ def ai_service_worker(
             'ai_service': env['ai_service'],
             'data': {
                 'account_number': account_id,
-                'hosts': compile_scores(result, host_by_id),
+                'results': results,
                 'common_data': {
-                    'contrasts': isolation_forest.contrast(),
-                    'charts': compile_charts(isolation_forest.to_report()),
+                    'charts': isolation_forest.to_report(),
                 }
             }
         }
