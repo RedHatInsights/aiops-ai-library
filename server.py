@@ -17,6 +17,7 @@ def create_application():
         float(os.environ.get('IF_NUM_TREES_FACTOR', .2))
     app.config['IF_SAMPLE_SIZE_FACTOR'] = \
         float(os.environ.get('IF_SAMPLE_SIZE_FACTOR', .2))
+    app.config['IF_MIN_SCORE'] = float(os.environ.get('IF_MIN_SCORE', .5))
     return app
 
 
@@ -34,6 +35,7 @@ def index():
         'ai_service': APP.config['AI_SERVICE'],
         'num_trees_factor': APP.config['IF_NUM_TREES_FACTOR'],
         'sample_size_factor': APP.config['IF_SAMPLE_SIZE_FACTOR'],
+        'min_score': APP.config['IF_MIN_SCORE'],
     }
 
     try:

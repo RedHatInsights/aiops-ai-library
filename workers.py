@@ -140,8 +140,10 @@ def ai_service_worker(
             num_trees,
             sample_size,
         )
-        result = isolation_forest.predict(data_frame)
-        host_by_id = {x['id']: x for x in batch_data['results']}
+        result = isolation_forest.predict(
+            data_frame,
+            min_score=env['min_score'],
+        )
 
         LOGGER.info('Analysis have %s rows in scores', len(result))
 
