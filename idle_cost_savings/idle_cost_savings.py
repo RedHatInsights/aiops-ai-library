@@ -5,6 +5,8 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 
+import re
+
 
 class AwsIdleCostSavingsResult:
     """Idle Cost Savings Result."""
@@ -87,6 +89,11 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
         self.instance_types = self.container_nodes_tags[
             self.container_nodes_tags['name'] ==
             "beta.kubernetes.io/instance-type"
+        ].copy()
+
+        self.zones = self.container_nodes_tags[
+            self.container_nodes_tags['name'] ==
+            "failure-domain.beta.kubernetes.io/zone"
         ].copy()
 
         self.min_utilization = min_utilization
@@ -221,6 +228,16 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
     def _get_allocatable_memory_gb(self, x_memory):
         return x_memory / 1024 ** 3
 
+    def _get_external_id(self, x):
+        vm = self.vms[self.vms['id'] == x]
+        if np.any(vm):
+            return vm['source_ref'].item()
+
+    def _get_zone(self, x):
+        zone = self.zones[self.zones["container_node_id"] == x]
+        if np.any(zone):
+            return zone['value'].item()
+
     def _get_amount_of_pods(self, amount_of_pods):
         return len(self.container_groups[
             self.container_groups['container_node_id'] == amount_of_pods])
@@ -232,6 +249,8 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
         """
         nodes = self.container_nodes.copy()
         nodes.loc[:, 'instance_type'] = nodes.id.apply(self._get_instance_type)
+        nodes.loc[:, 'zone'] = nodes.id.apply(self._get_zone)
+        nodes.loc[:, 'external_id'] = nodes.id.apply(self._get_external_id)
         nodes.loc[:, 'role'] = nodes.id.apply(self._get_type)
         nodes.loc[:, 'flavor_cpus'] = nodes.instance_type.apply(
             self._get_flavor_cpu
@@ -394,20 +413,36 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
 
         return max([cpu_utilization, memory_utilization, pods_utilization])
 
-    def _format_node_list(self, nodes):
-        return nodes.loc[:, [
-            "id",
-            "host_inventory_uuid",
-            "host_name",
-            "allocatable_memory",
-            "allocatable_memory_gb",
-            "allocatable_cpus",
-            "allocatable_pods",
-            "no_of_pods"
-        ]].sort_values(
-            by='no_of_pods',
-            ascending=True
-        )
+    def _format_node_list(self, nodes, algorithm=None):
+        if not algorithm:
+            return nodes.loc[:, [
+                                    "id",
+                                    "external_id",
+                                    "zone",
+                                    "host_inventory_uuid",
+                                    "host_name",
+                                    "allocatable_memory",
+                                    "allocatable_memory_gb",
+                                    "allocatable_cpus",
+                                    "allocatable_pods",
+                                    "no_of_pods"
+                                ]].sort_values(
+                by='no_of_pods',
+                ascending=True
+            )
+        elif algorithm == "instance_type_cost_savings":
+            return nodes.loc[:, [
+                                    "id",
+                                    "external_id",
+                                    "zone",
+                                    "host_inventory_uuid",
+                                    "host_name",
+                                    "instance_type",
+                                    "no_of_pods"
+                                ]].sort_values(
+                by='no_of_pods',
+                ascending=True
+            )
 
     def _store_recommendation(
             self,
@@ -531,3 +566,133 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
                     containers
                 )
                 return
+
+    def _recommend_instance_type_cost_savings(
+            self,
+            source_id,
+            container_nodes_group
+    ):
+        """Recommend instance type changes."""
+        groups = container_nodes_group.groupby(
+            ['zone', 'instance_type']
+        ).groups
+
+        for key in groups.keys():
+            # Make recommendation for each cluster
+            zone, instance_type = key
+            nodes = container_nodes_group.loc[groups.get(key, [])]
+            nodes_count = len(nodes)
+
+            # instance_type = nodes.iloc[0].instance_type
+            instance_type_family, multiplier = self._parse_instance_type(
+                instance_type
+            )
+
+            if not instance_type_family:
+                # Instance type family that is not supported now or not
+                # recognized
+                continue
+
+            # Filter all flavors of a given family, but only ones that have
+            # large name
+            pattern = "^{}.".format(instance_type_family)
+            filtered_flavors = self.flavors[
+                self.flavors['cpus'].notnull() &
+                (self.flavors['name'].str.contains(pattern)) &
+                (self.flavors['name'].str.contains(".*?large$"))]['name']
+
+            indexed_flavors = {}
+            for flavor in filtered_flavors:
+                _f, m = self._parse_instance_type(flavor)
+                indexed_flavors[m] = flavor
+
+            self._store_instance_type_recommendation(
+                source_id,
+                zone,
+                nodes,
+                indexed_flavors,
+                instance_type,
+                multiplier,
+                nodes_count
+            )
+
+    def _parse_instance_type(self, instance_type):
+        # We support only large instances now
+        match = re.match(r'(.+?)\.(\d*)(x?)large', instance_type)
+        if not match:
+            return None, None
+
+        instance_type_family = match.group(1)
+        instance_type_multiplier = match.group(2)
+        instance_type_x = match.group(3)
+
+        if len(instance_type_x) == 0:
+            multiplier = 1
+        elif len(instance_type_x) > 0 and len(instance_type_multiplier) == 0:
+            multiplier = 2
+        else:
+            multiplier = int(instance_type_multiplier) * 2
+
+        return instance_type_family, multiplier
+
+    def _store_instance_type_recommendation(
+            self,
+            source_id,
+            zone,
+            nodes,
+            indexed_flavors,
+            instance_type,
+            multiplier,
+            nodes_count
+    ):
+        """Store Instance Type Recommendation.
+
+        Example: having m4.2xlarge the multiplier will be 4
+            and indexed_flavors will be {8: 'm4.4xlarge',
+            2: 'm4.xlarge', 1: 'm4.large', 32: 'm4.16xlarge',
+            20: 'm4.10xlarge', 4: 'm4.2xlarge'}
+        Take all flavors bigger than multiplier, then divide the value
+        by multipliers.
+        then 4xlarge will become 2
+        then if number of nodes is divisible by 2, we can convert them
+        all to 4xlarge.
+        Leading to recommendation six m4.2xlarge can be turned to three
+        m4.4xlarge or one m4.16xlarge.
+        """
+        recommendations = [
+            [int(nodes_count / (key / multiplier)), value]
+            for key, value in indexed_flavors.items() if
+            key > multiplier and  # Only for instance_types bigger than current
+            (key % multiplier) == 0 and
+            nodes_count % (key / multiplier) == 0]
+
+        if len(recommendations) == 0:
+            self.logger.debug("No applicable combination found to recommend.")
+            return
+
+        formated_recommendations = []
+        for key, value in recommendations:
+            formated_recommendations.append({
+                'instance_type_count': key,
+                'instance_type_name': value,
+                'message': "{} nodes with instance type '{}' can be replaced"
+                           " with {} nodes with instance type '{}'.".format(
+                                nodes_count, instance_type, key, value
+                            )
+            })
+
+        message = {
+            "message": "We can use bigger instance types, which can lead to "
+                       "cost reduction.",
+            "availability_zone": zone,
+            "instance_type": instance_type,
+            "recommended_nodes_for_shut_down": {
+                "nodes": self._format_node_list(
+                    nodes, "instance_type_cost_savings").to_dict('records')
+            },
+            "recommended_new_instance_types": formated_recommendations
+        }
+        self.result.add_recommendations(
+            source_id,
+            message
+        )
