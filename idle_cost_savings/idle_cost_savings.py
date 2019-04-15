@@ -505,6 +505,28 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
             container_nodes_group,
             active_containers
     ):
+        """Cost savings recommendations."""
+        containers = \
+            active_containers[
+                active_containers["container_node_id"].isin(
+                    container_nodes_group['id']
+                )
+            ]
+
+        self._recommend_idle_cost_savings(
+            source_id, container_nodes_group, containers
+        )
+
+        self._recommend_instance_type_cost_savings(
+            source_id, container_nodes_group
+        )
+
+    def _recommend_idle_cost_savings(
+            self,
+            source_id,
+            container_nodes_group,
+            active_containers
+    ):
         """Recommend nodes that can be shutoff."""
         containers = \
             active_containers[
