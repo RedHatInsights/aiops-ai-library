@@ -142,12 +142,36 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
         clusters = self.result.invalid_items.keys()
 
         for cluster in clusters:
-            details = self.result.invalid_items[cluster][0]
-            bad_hosts = details['current_state']['nodes']
-            bad_host_match = [h for h in bad_hosts if h['id'] == host_id]
-            if bad_host_match:
-                recommendations['cluster_id'] = cluster
-                recommendations['details'] = details
+            cost_saving_types = self.result.invalid_items[cluster]
+
+            # Populate the RuleIDs
+            # The recommendations are applicable to the 2 rules below
+
+            rules = set()
+
+            # Idle Cost Savings
+            idle_cost_savings = cost_saving_types['idle_cost_savings']
+            for savings in idle_cost_savings:
+                bad_hosts = savings.get('current_state', {}).get('nodes', [])
+                bad_host_match = [h for h in bad_hosts if h['id'] == host_id]
+                if bad_host_match:
+                    recommendations['cluster_id'] = cluster
+                    recommendations['idle_cost_savings_details'] = savings
+                    rules.add('aiops_idle_cost_savings')
+                    recommendations['applicable_rules'] = list(rules)
+
+            # Instance Type Cost Savings
+            instance_type_cost_savings = \
+                cost_saving_types['instance_type_cost_savings']
+            for savings in instance_type_cost_savings:
+                bad_hosts = savings['recommended_nodes_for_shut_down']['nodes']
+                bad_host_match = [h for h in bad_hosts if h['id'] == host_id]
+                if bad_host_match:
+                    recommendations['cluster_id'] = cluster
+                    recommendations['instance_type_cost_savings_details'] = \
+                        savings
+                    rules.add('aiops_instance_type_cost_savings')
+                    recommendations['applicable_rules'] = list(rules)
 
         return recommendations
 
