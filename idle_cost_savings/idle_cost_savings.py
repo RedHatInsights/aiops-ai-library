@@ -537,6 +537,7 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
 
         if self._utilization(container_nodes_group, container_nodes_group,
                              containers) >= self.min_utilization:
+            self.result.add_recommendations(source_id, 'idle_cost_savings', {})
             return
 
         shut_off_nodes = []
@@ -696,6 +697,10 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
 
         if len(recommendations) == 0:
             self.logger.debug("No applicable combination found to recommend.")
+            self.result.add_recommendations(
+                source_id,
+                'instance_type_cost_savings', {}
+            )
             return
 
         formated_recommendations = []
