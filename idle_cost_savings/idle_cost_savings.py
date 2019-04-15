@@ -8,21 +8,23 @@ import pandas as pd
 import re
 
 
-class AwsIdleCostSavingsResult:
+class AwsCostSavingsResult:
     """Idle Cost Savings Result."""
 
     def __init__(self):
         """Initialize value that holds Result."""
-        self.idle_cost_savings = defaultdict(defaultdict)
+        self.cost_savings = defaultdict(defaultdict)
         self.invalid_items = defaultdict(list)
         self.hosts = defaultdict(list)
 
-    def add_recommendations(self, source_id, message):
+    def add_recommendations(self, source_id, recommendation_type, message):
         """Append conclusive Result message to Cluser Id.
 
         Only include clusters that need recommendation.
         """
-        self.invalid_items[source_id].append(message)
+        if not self.invalid_items[source_id]:
+            self.invalid_items[source_id] = defaultdict(list)
+        self.invalid_items[source_id][recommendation_type].append(message)
 
     def set_hosts(self, hosts):
         """Assign per-host with recommendations dict."""
@@ -30,9 +32,9 @@ class AwsIdleCostSavingsResult:
 
     def to_dict(self):
         """Convert Idle Cost Savings Result instance to dict."""
-        self.idle_cost_savings['clusters'] = self.invalid_items
-        self.idle_cost_savings['hosts'] = self.hosts
-        return self.idle_cost_savings
+        self.cost_savings['clusters'] = self.invalid_items
+        self.cost_savings['hosts'] = self.hosts
+        return self.cost_savings
 
 
 class AwsIdleCostSavings:   #noqa  #Too few public methods
@@ -54,7 +56,7 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
                  min_utilization=70.0,
                  max_utilization=80.0):
         """Initialize values required to run idle cost savings."""
-        self.result = AwsIdleCostSavingsResult()
+        self.result = AwsCostSavingsResult()
         self.container_nodes = dataframes.get('container_nodes')
         self.container_nodes_tags = dataframes.get('container_nodes_tags')
         self.containers = dataframes.get('containers')
@@ -491,7 +493,11 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
         message['recommended_nodes_for_shut_down'] = \
             self._format_node_list(shut_off_nodes).to_dict('records')
 
-        self.result.add_recommendations(source_id, message)
+        self.result.add_recommendations(
+            source_id,
+            'idle_cost_savings',
+            message
+        )
 
     def _recommend_cost_savings(
             self,
@@ -694,5 +700,6 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
         }
         self.result.add_recommendations(
             source_id,
+            'instance_type_cost_savings',
             message
         )
