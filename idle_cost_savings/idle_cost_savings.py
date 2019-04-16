@@ -735,7 +735,10 @@ class AwsIdleCostSavings:   #noqa  #Too few public methods
                 'message': "{} nodes with instance type '{}' can be replaced"
                            " with {} nodes with instance type '{}'.".format(
                                 nodes_count, instance_type, key, value
-                            )
+                            ),
+                'affected_nodes_count': nodes_count,
+                'from_instance_type': instance_type,
+                'to_instance_type': value
             })
 
         message = {
