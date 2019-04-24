@@ -6,7 +6,7 @@ from flask.logging import default_handler
 from werkzeug.exceptions import BadRequest
 
 
-from workers import ai_worker
+from workers import instance_type_savings_worker
 
 
 def create_application():
@@ -50,7 +50,7 @@ def index():
     # Note: For insights data use `raw_data`
     # AI_Task_worker(job_id, raw_data, next_service, b64_identity)
 
-    ai_worker(
+    instance_type_savings_worker(
         input_data,
         next_service,
         ai_service,
@@ -61,7 +61,7 @@ def index():
 
     return jsonify(
         status='OK',
-        message='Volume Type Validation initiated.'
+        message='Instance Type Validation initiated.'
     )
 
 

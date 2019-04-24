@@ -2,6 +2,9 @@ import logging
 from threading import Thread, current_thread
 
 import requests
+import pandas as pd
+
+from instance_type_validation import AwsInstanceTypeValidation
 
 LOGGER = logging.getLogger()
 MAX_RETRIES = 3
@@ -44,7 +47,7 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
 #         b64_identity: str = None
 # )
 
-def ai_worker(
+def instance_type_savings_worker(
         job: dict,
         next_service: str,
         ai_service: str,
@@ -65,10 +68,36 @@ def ai_worker(
 
         # AI Processing of input data in `job` goes here
         # Store the AI Results in `output`
+
+        entities = [
+            "container_nodes",
+            "container_nodes_tags",
+            "container_images",
+            "container_images_tags",
+            "container_groups",
+            "containers",
+            "vms",
+            "sources",
+        ]
+
+        all_dataframes = {}
+
+        for entity in entities:
+            json_data = batch_data.get(entity)
+            all_dataframes[entity] = pd.DataFrame(json_data)
+
+        LOGGER.info(
+            '%s: Job ID %s: Instance Type Validation initiated...',
+            thread.name, batch_id
+        )
+
+        topology_data = AwsInstanceTypeValidation(all_dataframes)
+        result = topology_data.validate()
+
         output = {
             'id': batch_id,
             'ai_service': ai_service,
-            'data': 'RESULT_DATA'
+            'data': result.to_dict()
         }
 
         # Pass to the next service

@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 requests = ">=2.20.0"
 gunicorn = "*"
+pandas = "*"
+numpy = "*"
 Flask = "*"
 
 [dev-packages]
