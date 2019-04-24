@@ -24,6 +24,10 @@ class AwsInstanceTypeValidationResult:
         """
         self.invalid_items[source_id].append(message)
 
+    def set_hosts(self, hosts):
+        """Assign per-host with recommendations dict."""
+        self.hosts = hosts
+
     def to_dict(self):
         """Convert Instance Type Validation Result instance to dict."""
         self.instance_type_validation['clusters'] = self.invalid_items
@@ -115,7 +119,36 @@ class AwsInstanceTypeValidation:
                 tags_of_active_containers
             )
 
+        self._per_host_recommendations()
+
         return self.result
+
+    def _per_host_recommendations(self):
+        hosts = {}
+        for _index, host in self.vms.iterrows():
+            hosts[host.id] = {
+                "inventory_id": host.host_inventory_uuid,
+                "vm_id": host.id,
+                "name": host['name'],
+                "source_ref": host.source_ref,
+                "recommendations": self._recommendations(host.id)
+            }
+
+        self.result.set_hosts(hosts)
+
+    def _recommendations(self, host_id):
+        recommendations = []
+
+        for cluster in self.result.invalid_items.keys():
+            try:
+                recommendations = next(
+                    item for item in self.result.invalid_items[cluster]
+                    if item["vm_id"] == host_id
+                )
+                break
+            except StopIteration:
+                continue
+        return recommendations
 
     def active_containers(self):
         """Return containers that are active/running."""
