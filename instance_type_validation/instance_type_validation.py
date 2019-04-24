@@ -1,11 +1,15 @@
 """Instance Type Validation interface."""
 
 import re
+import json
+import os
 
 from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+
+CFG_DIR = '{}/config'.format(os.path.dirname(__file__))
 
 
 class AwsInstanceTypeValidationResult:
@@ -50,10 +54,10 @@ class AwsInstanceTypeValidation:
         self.vms = dataframes.get('vms')
         self.sources = dataframes.get('sources')
 
-        self.instance_type_mappings = {
-            'mongodb': 'i3,d2',
-            'http,https': 'm3,m4',
-        }
+        with open(f'{CFG_DIR}/instance_type_mappings.json') as json_file:
+            instance_type_mappings = json.load(json_file)
+
+        self.instance_type_mappings = instance_type_mappings
 
         ci_taggings = self.container_images_tags
         ioo_taggings = ci_taggings[
