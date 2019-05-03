@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import uuid
@@ -23,7 +24,8 @@ DEFAULT_FEATURE_LIST = [
     'os_kernel_version',
     'arch'
 ]
-FEATURE_LIST = os.environ.get('FEATURE_LIST', DEFAULT_FEATURE_LIST)
+FEATURE_LIST = json.loads(os.environ.get('FEATURE_LIST', "[]")) or \
+    DEFAULT_FEATURE_LIST
 
 
 def _retryable(method: str, *args, **kwargs) -> requests.Response:
@@ -132,6 +134,7 @@ def ai_service_worker(
             'data': {
                 'account_number': account_id,
                 'results': results,
+                'feature_list': FEATURE_LIST,
                 'common_data': {
                     'charts': isolation_forest.to_report(),
                 }
