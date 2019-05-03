@@ -9,6 +9,7 @@ from rad import rad
 
 LOGGER = logging.getLogger()
 MAX_RETRIES = 3
+FEATURE_LIST = os.environ.get('FEATURE_LIST', [])
 
 
 def _retryable(method: str, *args, **kwargs) -> requests.Response:
@@ -96,7 +97,7 @@ def ai_service_worker(
             rows,
         )
 
-        data_frame = rad.inventory_data_to_pandas(batch_data)
+        data_frame = rad.inventory_data_to_pandas(batch_data, *FEATURE_LIST)
         data_frame, _mapping = rad.preprocess(data_frame)
         isolation_forest = rad.IsolationForest(
             data_frame,
