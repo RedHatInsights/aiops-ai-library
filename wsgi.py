@@ -2,6 +2,7 @@ import logging
 from server import APP
 
 # Sync logging between Flask and Gunicorn
+logging.getLogger().setLevel(logging.INFO)
 gunicorn_logger = logging.getLogger('gunicorn.error')
 APP.logger.handlers = gunicorn_logger.handlers
 APP.logger.setLevel(gunicorn_logger.level)
