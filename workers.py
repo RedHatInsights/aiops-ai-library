@@ -1,4 +1,5 @@
 import logging
+import os
 import uuid
 from threading import Thread, current_thread
 
@@ -9,7 +10,20 @@ from rad import rad
 
 LOGGER = logging.getLogger()
 MAX_RETRIES = 3
-FEATURE_LIST = os.environ.get('FEATURE_LIST', [])
+DEFAULT_FEATURE_LIST = [
+    'number_of_cpus',
+    'cores_per_socket',
+    'system_memory_bytes',
+    'infrastructure_type',
+    'infrastructure_vendor',
+    'bios_vendor',
+    'bios_version',
+    'bios_release_date',
+    'os_release',
+    'os_kernel_version',
+    'arch'
+]
+FEATURE_LIST = os.environ.get('FEATURE_LIST', DEFAULT_FEATURE_LIST)
 
 
 def _retryable(method: str, *args, **kwargs) -> requests.Response:
