@@ -5,10 +5,11 @@ import uuid
 from threading import Thread, current_thread
 
 import requests
+from prometheus_metrics import METRICS, generate_aggregated_metrics
 
 from rad import rad
 
-
+REQUEST_TIME = METRICS['request_time']
 LOGGER = logging.getLogger()
 MAX_RETRIES = 3
 DEFAULT_FEATURE_LIST = [
@@ -84,6 +85,7 @@ def ai_service_worker(
         b64_identity: str = None,
         ) -> Thread:
     """Outlier detection."""
+    @REQUEST_TIME.time()
     def worker() -> None:
         thread = current_thread()
         LOGGER.debug('%s: Worker started', thread.name)
@@ -91,6 +93,7 @@ def ai_service_worker(
         try:
             account_id, batch_data = job['account'], job['data']
             rows = batch_data['total']
+            METRICS['data_size'].observe(rows)
             if rows == 0:
                 LOGGER.info(
                     '%s: Job account ID %s: no system in data. Aborting...',
@@ -113,18 +116,22 @@ def ai_service_worker(
             rows,
         )
 
-        data_frame = rad.inventory_data_to_pandas(batch_data, *FEATURE_LIST)
-        data_frame, _mapping = rad.preprocess(data_frame)
-        isolation_forest = rad.IsolationForest(
-            data_frame,
-            num_trees,
-            sample_size,
-        )
-        results = isolation_forest.predict(
-            data_frame,
-            min_score=env['min_score'],
-        )
-
+        with METRICS['preparation_time'].time():
+            data_frame = rad.inventory_data_to_pandas(batch_data, *FEATURE_LIST)
+            data_frame, _mapping = rad.preprocess(data_frame)
+        with METRICS['processing_time'].time():
+            isolation_forest = rad.IsolationForest(
+                data_frame,
+                num_trees,
+                sample_size,
+            )
+            METRICS['feature_size'].observe(isolation_forest.X.shape[1])
+            results = isolation_forest.predict(
+                data_frame,
+                min_score=env['min_score'],
+            )
+        with METRICS['report_time'].time():
+            reports = isolation_forest.to_report()
         LOGGER.info('Analysis have %s rows in scores', len(results))
 
         # Build response JSON
@@ -136,7 +143,7 @@ def ai_service_worker(
                 'results': results,
                 'feature_list': FEATURE_LIST,
                 'common_data': {
-                    'charts': isolation_forest.to_report(),
+                    'charts': reports,
                 }
             }
         }
@@ -146,7 +153,7 @@ def ai_service_worker(
             thread.name, batch_id, next_service
         )
 
-        # Pass to the next service
+        # Pass to the next servicez
         try:
             _retryable(
                 'post',
@@ -159,7 +166,7 @@ def ai_service_worker(
                 '%s: Failed to pass data for "%s": %s',
                 thread.name, batch_id, exception
             )
-
+        METRICS['jobs_published'].inc()
         LOGGER.debug('%s: Done, exiting', thread.name)
 
     thread = Thread(target=worker)

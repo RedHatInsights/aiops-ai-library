@@ -8,6 +8,7 @@ requests = ">=2.20.0"
 gunicorn = "*"
 Flask = "*"
 rad = {editable = true,git = "https://github.com/ManageIQ/aiops-rad.git",ref = "v0.9.9"}
+prometheus-client = "*"
 
 [dev-packages]
 pylama = "*"

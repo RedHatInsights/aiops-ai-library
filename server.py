@@ -6,7 +6,7 @@ from flask.logging import default_handler
 from werkzeug.exceptions import BadRequest
 
 from workers import ai_service_worker
-
+from prometheus_metrics import METRICS, generate_aggregated_metrics
 
 def create_application():
     """Create Flask application instance."""
@@ -61,6 +61,11 @@ def index():
         status='OK',
         message='Outlier detection initiated.',
     )
+
+@APP.route("/metrics", methods=['GET'])
+def get_metrics():
+    """Metrics Endpoint."""
+    return generate_aggregated_metrics()
 
 
 if __name__ == "__main__":

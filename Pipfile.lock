@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "1985c9eac1b88b9d5619380cb65d2345f4b6322d9f8c9b19e52da2123c169ca1"
+            "sha256": "b6db29e783473d41e007d92585817ea3abd117cc6a0acd7eace6631dd03faa2f"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -218,6 +218,13 @@
             ],
             "version": "==0.24.2"
         },
+        "prometheus-client": {
+            "hashes": [
+                "sha256:1b38b958750f66f208bcd9ab92a633c0c994d8859c831f7abc1f46724fcee490"
+            ],
+            "index": "pypi",
+            "version": "==0.6.0"
+        },
         "pyarrow": {
             "hashes": [
                 "sha256:0b37c6a4e12a0236668c73c46e8ac3537e904610bb298c8b29dc913c054f0ec6",
@@ -312,10 +319,10 @@
         },
         "urllib3": {
             "hashes": [
-                "sha256:4c291ca23bbb55c76518905869ef34bdd5f0e46af7afe6861e8375643ffee1a0",
-                "sha256:9a247273df709c4fedb38c711e44292304f73f39ab01beda9f6b9fc375669ac3"
+                "sha256:2393a695cd12afedd0dcb26fe5d50d0cf248e5a66f75dbd89a3d4eb333a61af4",
+                "sha256:a637e5fae88995b256e3409dc4d52c2e2e0ba32c42a6365fee8bbd2238de3cfb"
             ],
-            "version": "==1.24.2"
+            "version": "==1.24.3"
         },
         "werkzeug": {
             "hashes": [
@@ -349,10 +356,10 @@
         },
         "isort": {
             "hashes": [
-                "sha256:01cb7e1ca5e6c5b3f235f0385057f70558b70d2f00320208825fa62887292f43",
-                "sha256:268067462aed7eb2a1e237fcb287852f22077de3fb07964e87e00f829eea2d1a"
+                "sha256:1349c6f7c2a0f7539f5f2ace51a9a8e4a37086ce4de6f78f5f53fb041d0a3cd5",
+                "sha256:f09911f6eb114e5592abe635aded8bf3d2c3144ebcfcaf81ee32e7af7b7d1870"
             ],
-            "version": "==4.3.17"
+            "version": "==4.3.18"
         },
         "lazy-object-proxy": {
             "hashes": [
