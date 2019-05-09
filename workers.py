@@ -5,9 +5,10 @@ import uuid
 from threading import Thread, current_thread
 
 import requests
-from prometheus_metrics import METRICS, generate_aggregated_metrics
-
 from rad import rad
+
+from prometheus_metrics import METRICS
+
 
 REQUEST_TIME = METRICS['request_time']
 LOGGER = logging.getLogger()
@@ -117,7 +118,8 @@ def ai_service_worker(
         )
 
         with METRICS['preparation_time'].time():
-            data_frame = rad.inventory_data_to_pandas(batch_data, *FEATURE_LIST)
+            data_frame = rad.inventory_data_to_pandas(
+                batch_data, *FEATURE_LIST)
             data_frame, _mapping = rad.preprocess(data_frame)
         with METRICS['processing_time'].time():
             isolation_forest = rad.IsolationForest(
@@ -153,7 +155,7 @@ def ai_service_worker(
             thread.name, batch_id, next_service
         )
 
-        # Pass to the next servicez
+        # Pass to the next service
         try:
             _retryable(
                 'post',
