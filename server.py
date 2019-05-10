@@ -5,6 +5,7 @@ from flask import Flask, jsonify, request
 from flask.logging import default_handler
 from werkzeug.exceptions import BadRequest
 
+from prometheus_metrics import generate_aggregated_metrics
 from workers import ai_service_worker
 
 
@@ -61,6 +62,12 @@ def index():
         status='OK',
         message='Outlier detection initiated.',
     )
+
+
+@APP.route("/metrics", methods=['GET'])
+def get_metrics():
+    """Metrics Endpoint."""
+    return generate_aggregated_metrics()
 
 
 if __name__ == "__main__":
