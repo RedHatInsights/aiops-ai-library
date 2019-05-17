@@ -15,21 +15,7 @@ PROCESSING_TIME = METRICS['processing_time']
 
 LOGGER = logging.getLogger()
 MAX_RETRIES = 3
-DEFAULT_FEATURE_LIST = [
-    'number_of_cpus',
-    'cores_per_socket',
-    'system_memory_bytes',
-    'infrastructure_type',
-    'infrastructure_vendor',
-    'bios_vendor',
-    'bios_version',
-    'bios_release_date',
-    'os_release',
-    'os_kernel_version',
-    'arch'
-]
-FEATURE_LIST = json.loads(os.environ.get('FEATURE_LIST', "[]")) or \
-    DEFAULT_FEATURE_LIST
+FEATURE_LIST = json.loads(os.environ.get('FEATURE_LIST', "[]"))
 RAD_STRATEGY = os.environ.get('RAD_STRATEGY', 'scikitlearn')
 
 
@@ -183,9 +169,9 @@ def ai_service_worker(
                 env['min_score']
             )
 
-        METRICS['feature_size'].observe(isolation_forest.X.shape[1])
+        # METRICS['feature_size'].observe(isolation_forest.X.shape[1])
 
-        # TODO: with METRICS['report_time'].time():
+        # with METRICS['report_time'].time():
         #     reports = isolation_forest.to_report()
         reports = []
         LOGGER.info('Analysis have %s rows in scores', len(results))
