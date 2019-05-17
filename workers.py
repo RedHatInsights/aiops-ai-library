@@ -16,7 +16,6 @@ PROCESSING_TIME = METRICS['processing_time']
 LOGGER = logging.getLogger()
 MAX_RETRIES = 3
 FEATURE_LIST = json.loads(os.environ.get('FEATURE_LIST', "[]"))
-RAD_STRATEGY = os.environ.get('RAD_STRATEGY', 'scikitlearn')
 
 
 def _retryable(method: str, *args, **kwargs) -> requests.Response:
@@ -66,28 +65,6 @@ def isolation_forest_params(trees_factor, sample_factor, data_rows):
     else:
         sample_size = data_rows * 0.2
     return int(num_trees), int(sample_size)
-
-
-@PROCESSING_TIME.time()
-def rad_original(data_frame, num_of_tress, sample_size, min_score):
-    """Use original rad.
-
-    :data_frame: data to be processed
-    :num_of_tress: num_of_tress
-    :sample_size: sample_size
-    :min_score: threshold for determining anomalous
-    :return: IsolationForest and results
-    """
-    isolation_forest = rad.IsolationForest(
-        data_frame,
-        num_of_tress,
-        sample_size,
-    )
-    results = isolation_forest.predict(
-        data_frame,
-        min_score=min_score,
-    )
-    return isolation_forest, results
 
 
 @PROCESSING_TIME.time()
@@ -155,21 +132,11 @@ def ai_service_worker(
                 batch_data, *FEATURE_LIST)
             data_frame, _mapping = rad.preprocess(data_frame)
 
-        if RAD_STRATEGY == 'scikitlearn':
-            isolation_forest, results = scikitlearn(
-                data_frame,
-                num_trees,
-                sample_size,
-            )
-        else:
-            isolation_forest, results = rad_original(
-                data_frame,
-                num_trees,
-                sample_size,
-                env['min_score']
-            )
-
-        # METRICS['feature_size'].observe(isolation_forest.X.shape[1])
+        isolation_forest, results = scikitlearn(
+            data_frame,
+            num_trees,
+            sample_size,
+        )
 
         with METRICS['report_time'].time():
             reports = isolation_forest.to_report()
