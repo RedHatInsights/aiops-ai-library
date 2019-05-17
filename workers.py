@@ -11,6 +11,8 @@ from prometheus_metrics import METRICS
 
 
 REQUEST_TIME = METRICS['request_time']
+PROCESSING_TIME = METRICS['processing_time']
+
 LOGGER = logging.getLogger()
 MAX_RETRIES = 3
 DEFAULT_FEATURE_LIST = [
@@ -28,6 +30,7 @@ DEFAULT_FEATURE_LIST = [
 ]
 FEATURE_LIST = json.loads(os.environ.get('FEATURE_LIST', "[]")) or \
     DEFAULT_FEATURE_LIST
+RAD_STRATEGY = os.environ.get('RAD_STRATEGY', 'scikitlearn')
 
 
 def _retryable(method: str, *args, **kwargs) -> requests.Response:
@@ -79,6 +82,50 @@ def isolation_forest_params(trees_factor, sample_factor, data_rows):
     return int(num_trees), int(sample_size)
 
 
+@PROCESSING_TIME.time()
+def rad_original(data_frame, num_of_tress, sample_size, min_score):
+    """Use original rad.
+
+    :data_frame: data to be processed
+    :num_of_tress: num_of_tress
+    :sample_size: sample_size
+    :min_score: threshold for determining anomalous
+    :return: IsolationForest and results
+    """
+    isolation_forest = rad.IsolationForest(
+        data_frame,
+        num_of_tress,
+        sample_size,
+    )
+    results = isolation_forest.predict(
+        data_frame,
+        min_score=min_score,
+    )
+    return isolation_forest, results
+
+
+@PROCESSING_TIME.time()
+def scikitlearn(data_frame, num_of_tress, sample_size):
+    """Use scikitlearn.
+
+    :data_frame: data to be processed
+    :num_of_tress: num_of_tress
+    :sample_size: sample_size
+    :return: IsolationForest and results
+    """
+    isolation_forest = rad.RADIsolationForest(
+        n_estimators=num_of_tress,
+        max_samples=sample_size,
+        contamination=0.1,
+        behaviour="new"
+    )
+    results = isolation_forest.fit_predict_contrast(
+        data_frame,
+        training_frame=data_frame
+    )
+    return isolation_forest, results
+
+
 def ai_service_worker(
         job: dict,
         next_service: str,
@@ -121,19 +168,26 @@ def ai_service_worker(
             data_frame = rad.inventory_data_to_pandas(
                 batch_data, *FEATURE_LIST)
             data_frame, _mapping = rad.preprocess(data_frame)
-        with METRICS['processing_time'].time():
-            isolation_forest = rad.IsolationForest(
+
+        if RAD_STRATEGY == 'scikitlearn':
+            isolation_forest, results = scikitlearn(
                 data_frame,
                 num_trees,
                 sample_size,
             )
-            METRICS['feature_size'].observe(isolation_forest.X.shape[1])
-            results = isolation_forest.predict(
+        else:
+            isolation_forest, results = rad_original(
                 data_frame,
-                min_score=env['min_score'],
+                num_trees,
+                sample_size,
+                env['min_score']
             )
-        with METRICS['report_time'].time():
-            reports = isolation_forest.to_report()
+
+        METRICS['feature_size'].observe(isolation_forest.X.shape[1])
+
+        # TODO: with METRICS['report_time'].time():
+        #     reports = isolation_forest.to_report()
+        reports = []
         LOGGER.info('Analysis have %s rows in scores', len(results))
 
         # Build response JSON
