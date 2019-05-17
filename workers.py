@@ -171,9 +171,8 @@ def ai_service_worker(
 
         # METRICS['feature_size'].observe(isolation_forest.X.shape[1])
 
-        # with METRICS['report_time'].time():
-        #     reports = isolation_forest.to_report()
-        reports = []
+        with METRICS['report_time'].time():
+            reports = isolation_forest.to_report()
         LOGGER.info('Analysis have %s rows in scores', len(results))
 
         # Build response JSON

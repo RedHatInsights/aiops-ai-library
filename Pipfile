@@ -8,8 +8,8 @@ requests = ">=2.20.0"
 gunicorn = "*"
 Flask = "*"
 prometheus-client = "*"
-rad = {editable = true,git = "https://github.com/ManageIQ/aiops-rad.git",ref = "scikitlearn-if"}
 sklearn = "*"
+rad = {editable = true,git = "https://github.com/ManageIQ/aiops-rad.git",ref = "scikitlearn-if"}
 
 [dev-packages]
 pylama = "*"
