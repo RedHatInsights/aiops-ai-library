@@ -9,7 +9,7 @@ gunicorn = "*"
 Flask = "*"
 prometheus-client = "*"
 sklearn = "*"
-rad = {editable = true,git = "https://github.com/ManageIQ/aiops-rad.git",ref = "scikitlearn-if"}
+rad = {editable = true,git = "https://github.com/ManageIQ/aiops-rad.git",ref = "v0.10.0"}
 
 [dev-packages]
 pylama = "*"
