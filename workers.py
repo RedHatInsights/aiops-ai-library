@@ -11,23 +11,11 @@ from prometheus_metrics import METRICS
 
 
 REQUEST_TIME = METRICS['request_time']
+PROCESSING_TIME = METRICS['processing_time']
+
 LOGGER = logging.getLogger()
 MAX_RETRIES = 3
-DEFAULT_FEATURE_LIST = [
-    'number_of_cpus',
-    'cores_per_socket',
-    'system_memory_bytes',
-    'infrastructure_type',
-    'infrastructure_vendor',
-    'bios_vendor',
-    'bios_version',
-    'bios_release_date',
-    'os_release',
-    'os_kernel_version',
-    'arch'
-]
-FEATURE_LIST = json.loads(os.environ.get('FEATURE_LIST', "[]")) or \
-    DEFAULT_FEATURE_LIST
+FEATURE_LIST = json.loads(os.environ.get('FEATURE_LIST', "[]"))
 
 
 def _retryable(method: str, *args, **kwargs) -> requests.Response:
@@ -79,6 +67,28 @@ def isolation_forest_params(trees_factor, sample_factor, data_rows):
     return int(num_trees), int(sample_size)
 
 
+@PROCESSING_TIME.time()
+def scikitlearn(data_frame, num_of_tress, sample_size):
+    """Use scikitlearn.
+
+    :data_frame: data to be processed
+    :num_of_tress: num_of_tress
+    :sample_size: sample_size
+    :return: IsolationForest and results
+    """
+    isolation_forest = rad.RADIsolationForest(
+        n_estimators=num_of_tress,
+        max_samples=sample_size,
+        contamination=0.1,
+        behaviour="new"
+    )
+    results = isolation_forest.fit_predict_contrast(
+        data_frame,
+        training_frame=data_frame
+    )
+    return isolation_forest, results
+
+
 def ai_service_worker(
         job: dict,
         next_service: str,
@@ -121,17 +131,13 @@ def ai_service_worker(
             data_frame = rad.inventory_data_to_pandas(
                 batch_data, *FEATURE_LIST)
             data_frame, _mapping = rad.preprocess(data_frame)
-        with METRICS['processing_time'].time():
-            isolation_forest = rad.IsolationForest(
-                data_frame,
-                num_trees,
-                sample_size,
-            )
-            METRICS['feature_size'].observe(isolation_forest.X.shape[1])
-            results = isolation_forest.predict(
-                data_frame,
-                min_score=env['min_score'],
-            )
+
+        isolation_forest, results = scikitlearn(
+            data_frame,
+            num_trees,
+            sample_size,
+        )
+
         with METRICS['report_time'].time():
             reports = isolation_forest.to_report()
         LOGGER.info('Analysis have %s rows in scores', len(results))
