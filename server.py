@@ -2,7 +2,6 @@ import logging
 import os
 
 from flask import Flask, jsonify, request
-from flask.logging import default_handler
 from werkzeug.exceptions import BadRequest
 
 from prometheus_metrics import generate_aggregated_metrics
@@ -23,9 +22,7 @@ def create_application():
 
 
 APP = create_application()
-ROOT_LOGGER = logging.getLogger()
-ROOT_LOGGER.setLevel(APP.logger.level)
-ROOT_LOGGER.addHandler(default_handler)
+APP.logger = logging.getLogger('server')
 
 
 @APP.route("/", methods=['POST', 'PUT'])

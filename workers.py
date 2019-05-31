@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import uuid
-from threading import Thread, current_thread
+from threading import Thread
 
 import requests
 from rad import rad
@@ -13,7 +13,7 @@ from prometheus_metrics import METRICS
 REQUEST_TIME = METRICS['request_time']
 PROCESSING_TIME = METRICS['processing_time']
 
-LOGGER = logging.getLogger()
+LOGGER = logging.getLogger('worker')
 MAX_RETRIES = 3
 FEATURE_LIST = json.loads(os.environ.get('FEATURE_LIST', "[]"))
 
@@ -28,8 +28,6 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
     :return: Response object
     :raises: HTTPError when all requests fail
     """
-    thread = current_thread()
-
     with requests.Session() as session:
         for attempt in range(MAX_RETRIES):
             try:
@@ -38,8 +36,8 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
                 resp.raise_for_status()
             except (requests.HTTPError, requests.ConnectionError) as error:
                 LOGGER.warning(
-                    '%s: Request failed (attempt #%d), retrying: %s',
-                    thread.name, attempt, str(error)
+                    'Request failed (attempt #%d), retrying: %s',
+                    attempt, str(error)
                 )
                 continue
             else:
@@ -98,8 +96,7 @@ def ai_service_worker(
     """Outlier detection."""
     @REQUEST_TIME.time()
     def worker() -> None:
-        thread = current_thread()
-        LOGGER.debug('%s: Worker started', thread.name)
+        LOGGER.debug('Worker started')
 
         try:
             account_id, batch_data = job['account'], job['data']
@@ -107,18 +104,18 @@ def ai_service_worker(
             METRICS['data_size'].observe(rows)
             if rows == 0:
                 LOGGER.info(
-                    '%s: Job account ID %s: no system in data. Aborting...',
-                    thread.name, account_id
+                    'Job account ID %s: no system in data. Aborting...',
+                    account_id
                 )
                 return
         except KeyError:
-            LOGGER.error('%s: Invalid Job data, terminated.', thread.name)
+            LOGGER.error('Invalid Job data, terminated.')
             return
 
         batch_id = str(uuid.uuid1())
         LOGGER.info(
-            '%s: Job account ID %s (batch ID: %s): Started...',
-            thread.name, account_id, batch_id
+            'Job account ID %s (batch ID: %s): Started...',
+            account_id, batch_id
         )
 
         num_trees, sample_size = isolation_forest_params(
@@ -157,8 +154,8 @@ def ai_service_worker(
         }
 
         LOGGER.info(
-            '%s: Job ID %s: detection done, publishing to %s ...',
-            thread.name, batch_id, next_service
+            'Job ID %s: detection done, publishing to %s ...',
+            batch_id, next_service
         )
 
         # Pass to the next service
@@ -171,11 +168,11 @@ def ai_service_worker(
             )
         except requests.HTTPError as exception:
             LOGGER.error(
-                '%s: Failed to pass data for "%s": %s',
-                thread.name, batch_id, exception
+                'Failed to pass data for "%s": %s', batch_id,
+                exception
             )
         METRICS['jobs_published'].inc()
-        LOGGER.debug('%s: Done, exiting', thread.name)
+        LOGGER.debug('Done, exiting')
 
     thread = Thread(target=worker)
     thread.start()
