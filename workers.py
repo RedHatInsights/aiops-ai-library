@@ -1,5 +1,6 @@
 import logging
 from threading import Thread, current_thread
+from urllib3.exceptions import NewConnectionError
 
 import requests
 import pandas as pd
@@ -28,7 +29,8 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
                 resp = getattr(session, method)(*args, **kwargs)
 
                 resp.raise_for_status()
-            except (requests.HTTPError, requests.ConnectionError) as e:
+            except (requests.HTTPError, requests.ConnectionError,
+                    NewConnectionError) as e:
                 LOGGER.warning(
                     '%s: Request failed (attempt #%d), retrying: %s',
                     thread.name, attempt, str(e)
