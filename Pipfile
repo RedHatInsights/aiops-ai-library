@@ -12,6 +12,9 @@ sklearn = "*"
 rad = {editable = true,git = "https://github.com/ManageIQ/aiops-rad.git",ref = "v0.10.0"}
 
 [dev-packages]
+coverage = "*"
+pytest-mock = "*"
+pytest-cov = "*"
 pylama = "*"
 pylama-pylint = "*"
 pytest = "*"
