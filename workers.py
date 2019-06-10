@@ -56,7 +56,6 @@ def volume_type_validation_worker(
         b64_identity: str = None
 ) -> Thread:
     """Validate Volume Types."""
-
     def worker() -> None:
         thread = current_thread()
         LOGGER.debug('%s: Worker started', thread.name)
