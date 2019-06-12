@@ -1,8 +1,7 @@
 """AWS Volume Type Validation interface."""
 import operator
-import numpy as np
-
 from collections import defaultdict
+import numpy as np
 
 
 class VolumeTypeValidationResult:
@@ -15,7 +14,10 @@ class VolumeTypeValidationResult:
         self.hosts = defaultdict(list)
 
     def add_recommendations(self, source_id, message):
-        """Append conclusive Result message to Cluser Id. Only include wrong clusters"""
+        """Append conclusive Result message to Cluser Id.
+
+        Only include wrong clusters.
+        """
         self.invalid_items[source_id].append(message)
 
     def set_hosts(self, hosts):
@@ -84,7 +86,7 @@ class AwsVolumeTypeValidation:  #noqa for R0903 Too few public methods
             container_nodes_taggings['name'] == "type"].copy()
 
         if np.any(type_taggings):
-            # TODO For master nodes, it can happen that the nodes
+            # TODO For master nodes, it can happen that the nodes #noqa
             # running etcd have io1 and the rest gp2.
             # Lets ignore these for now, until we can identify nodes running etcd
             non_master_nodes_ids = type_taggings[
@@ -183,8 +185,7 @@ class AwsVolumeTypeValidation:  #noqa for R0903 Too few public methods
         for bad_volume in bad_volumes:
             bad_volume['vm_id'] = \
                 bad_vm_to_bad_volume_connection.loc[bad_vm_to_bad_volume_connection['volume_id'] ==
-                    bad_volume['id']].vm_id.values[0]
-
+                                                    bad_volume['id']].vm_id.values[0]
 
         return bad_volumes, bad_hosts
 
