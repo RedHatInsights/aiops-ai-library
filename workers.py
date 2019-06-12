@@ -3,6 +3,7 @@ import logging
 import os
 import uuid
 from threading import Thread
+from urllib3.exceptions import NewConnectionError
 
 import requests
 from rad import rad
@@ -34,7 +35,8 @@ def _retryable(method: str, *args, **kwargs) -> requests.Response:
                 resp = getattr(session, method)(*args, **kwargs)
 
                 resp.raise_for_status()
-            except (requests.HTTPError, requests.ConnectionError) as error:
+            except (requests.HTTPError, requests.ConnectionError,
+                    NewConnectionError) as error:
                 LOGGER.warning(
                     'Request failed (attempt #%d), retrying: %s',
                     attempt, str(error)
