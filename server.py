@@ -1,11 +1,13 @@
 import logging
 import os
+import requests
 
 from flask import Flask, jsonify, request
 from werkzeug.exceptions import BadRequest
+from urllib3.exceptions import NewConnectionError
 
 from prometheus_metrics import generate_aggregated_metrics
-from workers import ai_service_worker
+from workers import ai_service_worker, _retryable
 
 
 def create_application():
@@ -23,6 +25,29 @@ def create_application():
 
 APP = create_application()
 APP.logger = logging.getLogger('server')
+
+VERSION = "0.0.1"
+
+
+@APP.route("/", methods=['GET'])
+def get_root():
+    """Root Endpoint for Liveness/Readiness check."""
+    next_service = APP.config['NEXT_SERVICE_URL']
+    try:
+        _retryable('get', f'{next_service}')
+        status = 'OK'
+        message = 'Up and Running'
+        status_code = 200
+    except (requests.HTTPError, NewConnectionError):
+        status = 'Error'
+        message = 'aiops-publisher not operational'
+        status_code = 500
+
+    return jsonify(
+        status=status,
+        version=VERSION,
+        message=message
+    ), status_code
 
 
 @APP.route("/", methods=['POST', 'PUT'])
