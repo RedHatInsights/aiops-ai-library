@@ -9,7 +9,7 @@ gunicorn = "*"
 Flask = "*"
 prometheus-client = "*"
 sklearn = "*"
-rad = {editable = true,git = "https://github.com/ManageIQ/aiops-rad.git",ref = "v0.10.0"}
+rad = {editable = true,git = "https://github.com/ManageIQ/aiops-rad.git",ref = "v0.11.0"}
 
 [dev-packages]
 coverage = "*"
