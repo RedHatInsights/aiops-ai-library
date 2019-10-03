@@ -1,10 +1,10 @@
-# AI-Ops: AI library
+# ⛔️ DEPRECATED: AI-Ops: AI library
 
 [![Build Status](https://travis-ci.org/ManageIQ/aiops-ai-library.svg?branch=master)](https://travis-ci.org/ManageIQ/aiops-ai-library)
 [![License](https://img.shields.io/badge/license-APACHE2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
 
 This repository contains custom analytics services. Please consult available branches. Each analytics service is currently kept as a separate Python Flask microservice app in its own branch.
-
 
 ## Get Started
 
